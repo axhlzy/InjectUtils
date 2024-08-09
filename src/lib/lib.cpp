@@ -1,4 +1,3 @@
-#include "test.h"
 #include <arpa/inet.h>
 #include <iostream>
 #include <jni.h>
@@ -56,7 +55,7 @@ int l_print(lua_State *L) {
     return 0;
 }
 
-void repl_socket(lua_State *L) {
+void repl_socket(lua_State *L, int port = SOCKET_PORT) {
 
     int opt = 1;
     struct sockaddr_in address;
@@ -65,42 +64,42 @@ void repl_socket(lua_State *L) {
     address = {
         .sin_family = AF_INET,
         .sin_addr.s_addr = INADDR_ANY,
-        .sin_port = htons(8024)};
+        .sin_port = htons(port)};
 
     if ((serverSocket = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-        perror("create socket fail");
+        console->error("create socket fail");
         exit(EXIT_FAILURE);
     }
 
     if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
-        perror("setsockopt");
+        console->error("setsockopt fail");
         exit(EXIT_FAILURE);
     }
 
     if (bind(serverSocket, reinterpret_cast<struct sockaddr *>(&address), sizeof(address)) < 0) {
-        perror("serverSocket bind fail");
+        console->error("serverSocket bind fail");
         exit(EXIT_FAILURE);
     }
 
     if (listen(serverSocket, 3) < 0) {
-        perror("serverSocket listen fail");
+        console->error("serverSocket listen fail");
         exit(EXIT_FAILURE);
     }
 
     if ((clientSocket = accept(serverSocket, reinterpret_cast<struct sockaddr *>(&address), &addrlen)) < 0) {
-        perror("clientSocket accept fail");
+        console->error("clientSocket accept fail");
         exit(EXIT_FAILURE);
     } else {
-        std::cout << "Client connected." << std::endl;
+        console->info("Client connected. IP: {}", inet_ntoa(address.sin_addr));
 
         struct sockaddr_in clientAddr;
         socklen_t clientAddrLen = sizeof(clientAddr);
         if (getpeername(clientSocket, reinterpret_cast<struct sockaddr *>(&clientAddr), &clientAddrLen) < 0) {
-            perror("getpeername");
+            console->error("getpeername fail");
         } else {
-            std::cout << "Client IP: " << inet_ntoa(clientAddr.sin_addr) << std::endl;
-            std::cout << "Client sin_family: " << clientAddr.sin_family << std::endl;
-            std::cout << "Client port: " << ntohs(clientAddr.sin_port) << std::endl;
+            console->warn("Client IP: {}", inet_ntoa(clientAddr.sin_addr));
+            console->warn("Client sin_family: {}", clientAddr.sin_family);
+            console->warn("Client port: {}", ntohs(clientAddr.sin_port));
         }
     }
 
@@ -148,9 +147,8 @@ void repl_socket(lua_State *L) {
 static void repl(lua_State *L) {
     std::string input;
     while (true) {
-        printf("exec > ");
-        std::getline(std::cin, input);
-        if (input == "exit" || input == "q")
+        std::cout << "exec > ";
+        if (std::getline(std::cin, input) && (input == "exit" || input == "q"))
             break;
         int status = luaL_dostring(L, input.c_str());
         auto status_enum = reinterpret_cast<LUA_STATUS &>(status);
@@ -166,9 +164,9 @@ static void repl(lua_State *L) {
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *vm, void *reserved) {
     if (vm == nullptr && reserved == nullptr) {
-        // debug mode only start vm
         startLuaVM();
     } else {
+        S_TYPE = START_TYPE::SOCKET;
         logd("------------------- JNI_OnLoad -------------------");
         if (vm->GetEnv((void **)&env, JNI_VERSION_1_6) == JNI_OK) {
             logd("[*] GetEnv OK | env:%p | vm:%p", env, vm);
@@ -187,11 +185,13 @@ JNI_OnLoad(JavaVM *vm, void *reserved) {
 }
 
 inline void startRepl(lua_State *L) {
-#if DEBUG_LOCAL
-    repl(L);
-#else
-    repl_socket(L);
-#endif
+    if (S_TYPE == START_TYPE::DEBUG) {
+        logd("[*] startRepl Debug Mode\n");
+        repl(L);
+    } else if (S_TYPE == START_TYPE::SOCKET) {
+        logd("[*] startRepl Socket Mode\n");
+        repl_socket(L, SOCKET_PORT);
+    }
 }
 
 KittyMemoryMgr kittyMemMgr;
@@ -295,6 +295,4 @@ void startLuaVM() {
     reg_crash_handler();
 
     initVM();
-
-    soinfo *info = NULL;
 }

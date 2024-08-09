@@ -1,6 +1,11 @@
 #include "main.h"
 #include "test.h"
+
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <string>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 using namespace std;
@@ -29,36 +34,7 @@ void checkIl2cpp() {
     t.detach();
 }
 
-constexpr bool ONLY_START_VM = DEBUG_LOCAL;
-int main(int argc, char *argv[]) {
-
-    checkIl2cpp();
-
-    if (ONLY_START_VM) {
-        JNI_OnLoad(nullptr, nullptr);
-        return 0;
-    }
-
-    if (argc != 2) {
-        console->error("Usage: {} <pid|package_name>", argv[0]);
-        return 1;
-    }
-
-    pid_t pid = -1;
-
-    try {
-        if (isdigit(argv[1][0])) {
-            pid = std::stoi(argv[1]);
-        }
-    } catch (const std::exception &e) {
-        std::string appPkg = argv[1];
-        // not working
-        pid = KittyMemoryEx::getProcessID(appPkg);
-    }
-
-    // set_selinux_state ...
-    // ...
-
+int inject(pid_t pid) {
     string lib = get_self_path();
     bool use_memfd = false, hide_maps = false, hide_solist = false, stopped = false;
 
@@ -69,7 +45,7 @@ int main(int argc, char *argv[]) {
             console->info("KittyInjector attach");
         } else {
             console->error("KittyInjector attach failed");
-            return 0;
+            return -1;
         }
         auto tm_start = std::chrono::high_resolution_clock::now();
 
@@ -87,6 +63,108 @@ int main(int argc, char *argv[]) {
             console->info("[*] Injection took {} MS.", inj_ms.count());
 
         kitInjector.detach();
+    }
+
+    return 0;
+}
+
+void startLocalRepl(int port = SOCKET_PORT) {
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        console->error("Error creating socket");
+        exit(EXIT_FAILURE);
+    }
+
+    struct sockaddr_in serv_addr;
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(port);
+    serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+        console->error("Error connecting to socket");
+        close(sockfd);
+        exit(EXIT_FAILURE);
+    }
+
+    console->info("Connected to socket on port {}", port);
+
+    constexpr int BFSIZE = 0x1000;
+    char buffer[BFSIZE] = {0};
+    while (true) {
+        fflush(stdout);
+        memset(buffer, 0, sizeof(buffer));
+        std::cout << "exec > ";
+        std::cin.getline(buffer, BFSIZE);
+
+        if (strcmp(buffer, "exit") == 0 || strcmp(buffer, "q") == 0) {
+            console->info("Exiting...");
+            break;
+        }
+        console->error("1 -> {} {}", (char *)buffer, strlen(buffer));
+
+        int n = write(sockfd, buffer, strlen(buffer));
+        if (n < 0) {
+            console->error("Error writing to socket");
+            break;
+        }
+
+        std::cout << std::flush;
+        memset(buffer, 0, BFSIZE);
+
+        n = read(sockfd, buffer, BFSIZE);
+        if (n < 0) {
+            console->error("Error reading from socket");
+            break;
+        }
+
+        console->info("{}", buffer);
+    }
+
+    close(sockfd);
+}
+
+int main(int argc, char *argv[]) {
+
+    // checkIl2cpp();
+
+    // set_selinux_state
+    int result = system("setenforce 0");
+    if (result == -1) {
+        console->error("Error executing system command.");
+    } else {
+        console->warn("setenforce 0 executed successfully.");
+    }
+
+    if (argc == 1) {
+        S_TYPE = START_TYPE::DEBUG;
+        JNI_OnLoad(nullptr, nullptr);
+        return 0;
+    }
+
+    if (argc != 2) {
+        console->error("Usage: {} <pid|package_name>", argv[0]);
+        return 1;
+    }
+
+    S_TYPE = START_TYPE::SOCKET;
+
+    pid_t pid = -1;
+
+    try {
+        if (isdigit(argv[1][0])) {
+            pid = std::stoi(argv[1]);
+        }
+    } catch (const std::exception &e) {
+        std::string appPkg = argv[1];
+        // not working
+        pid = KittyMemoryEx::getProcessID(appPkg);
+    }
+
+    if (inject(pid) == -1)
+        return -1;
+
+    if (S_TYPE == START_TYPE::SOCKET) {
+        startLocalRepl();
     }
 
     return 0;

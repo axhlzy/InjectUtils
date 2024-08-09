@@ -36,9 +36,6 @@ extern KittyMemoryMgr kittyMemMgr;
 #define DEBUG_PRINT(fmt, ...)
 #endif
 
-// 测试的时候使用 （直接启动本地lua虚拟机同事使用测试代码及日志）
-#define DEBUG_LOCAL true
-
 // 兼容luabridge3对void*特化成 userdata 导致控制台不能直接输入数字视作void*的问题
 #ifndef PTR
 #define PTR uintptr_t
@@ -72,6 +69,14 @@ __attribute__((visibility("default"))) void initVM();
 #ifdef __cplusplus
 }
 #endif
+
+enum START_TYPE {
+    DEBUG,
+    SOCKET
+};
+
+static START_TYPE S_TYPE = DEBUG;
+static int SOCKET_PORT = 8024;
 
 extern lua_State *G_LUA;
 

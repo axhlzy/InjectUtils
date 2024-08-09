@@ -15,5 +15,7 @@ void bind_libs(lua_State *L) {
 
     reg_asm(L);
 
+    reg_linker(L);
+
     alias(L);
 }
