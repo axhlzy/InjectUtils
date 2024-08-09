@@ -76,10 +76,9 @@ set(LIB_CPP_OBGUSCATOR_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cpp-obfuscator)
 target_include_directories(${PROJECT_NAME} INTERFACE ${LIB_CPP_OBGUSCATOR_DIR}/include)
 
 # boost 1.78.0
-set(BOOST_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/boost-1_78_0/)
-file(GLOB_RECURSE BOOST_LIBS ${BOOST_ROOT}/${ANDROID_ABI}/lib/*.a)
-target_include_directories(${PROJECT_NAME} INTERFACE ${BOOST_ROOT}/include)
-target_link_libraries(${PROJECT_NAME} INTERFACE ${BOOST_LIBS})
+set(LIB_NETWORK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/boost-1_78_0)
+add_subdirectory(${LIB_NETWORK_DIR})
+target_link_libraries(${PROJECT_NAME} INTERFACE boost_1_78_0)
 
 # network
 set(LIB_NETWORK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/network)
