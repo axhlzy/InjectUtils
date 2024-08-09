@@ -127,7 +127,7 @@ void disp_soinfo_link() {
         auto base = info->base;
         auto size = info->size;
         auto dynamic = info->dynamic;
-        console->info("{} {} <- {} \n\tphdr : {} phnum : {} | base : {} | size : {} | dynamic : {}",
+        console->info("{} {} <- {} \n\tphdr : {} phnum : {} \n\tbase : {} | size : {} | dynamic : {}",
                       index++, (void *)info, soname, (void *)phdr, phnum, (void *)base, size, (void *)dynamic);
         info = info->next;
     } while (info != NULL);
@@ -157,7 +157,7 @@ void disp_link_map_head() {
     struct link_map *l_next = &link_current;
 
     do {
-        console->info("link_map {{ l_addr: 0x{:X}, l_name: {}, l_ld: {}, l_next: {}, l_prev: {} }}",
+        console->info("l_addr: 0x{:X}, l_name: {} \n\tl_ld: {}, l_next: {}, l_prev: {} }}",
                       l_next->l_addr,
                       l_next->l_name ? l_next->l_name : "null",
                       static_cast<void *>(l_next->l_ld),

@@ -122,7 +122,10 @@
         "xtr1common": "cpp",
         "xtree": "cpp",
         "xutility": "cpp",
-        "semaphore": "cpp"
+        "semaphore": "cpp",
+        "resumable": "cpp",
+        "source_location": "cpp",
+        "ranges": "cpp"
     },
     "commentTranslate.targetLanguage": "zh-CN",
     "mesonbuild.configureOnOpen": false,

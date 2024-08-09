@@ -12,36 +12,31 @@ public:
     inline static vector<void *> cur_list;
     inline static int count_hook_index = -1;
 
-    void version() {
-        printf("Dobby version: %s\n", DobbyGetVersion());
-    }
-
-    // test printf
-    void test() {
-        printf("current function address -> %p\n", &dobby_bind::test);
+    static void version() {
+        console->info("Dobby version: {}\n", DobbyGetVersion());
     }
 
     // nop
     void n(size_t p) {
 
-        printf("nop -> %p\n", p);
+        console->info("nop -> {}\n", p);
 
         void *address = (void *)p;
 
         if (hookMap.find(address) != hookMap.end()) {
-            printf("DobbyHook already hooked\n");
+            console->info("DobbyHook already hooked\n");
             return;
         } else {
             hookMap[address] = nullptr;
         }
         cur_list[++count_hook_index] = address;
         auto replace_call = (void *)*[](void *arg0, void *arg1, void *arg2, void *arg3) {
-            printf("called nop \n\t[0] -> %p\n\t[1] -> %p\n\t[2] -> %p\n\t[3] -> %p \n", arg0, arg1, arg2, arg3);
+            console->info("called nop \n\t[0] -> {}\n\t[1] -> {}\n\t[2] -> {}\n\t[3] -> {} \n", arg0, arg1, arg2, arg3);
         };
 
         // int DobbyHook(void *address, dobby_dummy_func_t replace_func, dobby_dummy_func_t *origin_func);
         DobbyHook(address, replace_call, (dobby_dummy_func_t *)&hookMap[address]);
-        printf("DobbyHook( %p, %p, %p )\n", address, replace_call, &hookMap[address]);
+        console->info("DobbyHook( {}, {}, {} )\n", (void *)address, (void *)replace_call, (void *)&hookMap[address]);
     }
 
     // cancel nop
@@ -49,11 +44,11 @@ public:
         void *address = (void *)p;
 
         if (hookMap.find(address) == hookMap.end()) {
-            printf("DobbyHook not hooked\n");
+            console->info("DobbyHook not hooked\n");
             return;
         }
         DobbyDestroy(address);
-        printf("DobbyDestroy( %p ) | %p\n", address, &hookMap[address]);
+        console->info("DobbyDestroy( {} ) | {}\n", (void *)address, (void *)&hookMap[address]);
         hookMap.erase(address);
     }
 };
@@ -61,13 +56,13 @@ public:
 void reg_dobby(lua_State *L) {
     luabridge::getGlobalNamespace(L)
         .beginClass<dobby_bind>("dobby_bind")
-        .addFunction("version", &dobby_bind::version)
         .addFunction("n", &dobby_bind::n)
         .addFunction("nn", &dobby_bind::nn)
-        .addFunction("test", &dobby_bind::test)
-        .endClass();
+        .endClass()
+        .beginNamespace("dobby")
+        .addFunction("version", &dobby_bind::version)
+        .endNamespace();
     static auto dobby = new dobby_bind();
-    luabridge::setGlobal(L, dobby, "dobby");
-
+    luabridge::setGlobal(L, dobby, "dobby_bind");
     console->info("[*] luabridge bind {}", "dobby");
 }

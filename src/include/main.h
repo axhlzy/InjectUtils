@@ -18,6 +18,8 @@
 #include <vector>
 #include <xdl.h>
 
+#include "magic_enum_all.hpp"
+
 #include "capstone/capstone.h"
 #include "keystone/keystone.h"
 
@@ -70,6 +72,21 @@ __attribute__((visibility("default"))) void initVM();
 }
 #endif
 
+// #define LUA_OK           0
+// #define LUA_YIELD        1
+// #define LUA_ERRRUN       2
+// #define LUA_ERRSYNTAX    3
+// #define LUA_ERRMEM       4
+// #define LUA_ERRERR       5
+enum LUA_STATUS {
+    LUA_OK_ = 0,
+    LUA_YIELD_ = 1,
+    LUA_ERRRUN_ = 2,
+    LUA_ERRSYNTAX_ = 3,
+    LUA_ERRMEM_ = 4,
+    LUA_ERRERR_ = 5
+};
+
 enum START_TYPE {
     DEBUG,
     SOCKET
@@ -80,6 +97,14 @@ static int SOCKET_PORT = 8024;
 
 extern lua_State *G_LUA;
 
+void reg_crash_handler();
+
+INLINE void init_kittyMemMgr();
+
 std::string get_self_path();
+
+void set_selinux_state(bool status = false);
+
+void inject(pid_t pid);
 
 #endif // MAIN_CPP_H

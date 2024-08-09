@@ -1,4 +1,10 @@
+#pragma once
+
 #include <android/log.h>
+
+#include <spdlog/sinks/android_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 
 static const char *TAG = "ZZZ";
 
@@ -10,8 +16,6 @@ static const char *TAG = "ZZZ";
 #if !defined(lua_printf)
 #define lua_printf(s, l) fwrite((s), sizeof(char), (l), stdout)
 #endif
-
-#include "spdlog/spdlog.h"
 
 extern std::shared_ptr<spdlog::logger> console;
 extern std::shared_ptr<spdlog::logger> android_logger;

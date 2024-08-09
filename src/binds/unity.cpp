@@ -10,7 +10,7 @@ public:
 
     void info() {
         // todo get unity packagename version etc.
-        printf("TODO");
+        console->info("TODO");
     }
 
     void assemblies() {
