@@ -1,0 +1,37 @@
+[
+{
+  "directory": "E:/apks/TMP4/xHook/libxhook/jni/armeabi-v7a",
+  "command": "C:\\Users\\pc\\AppData\\Local\\Android\\Sdk\\ndk\\25.1.8937393\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang.exe --target=armv7-none-linux-androideabi21 --sysroot=C:/Users/pc/AppData/Local/Android/Sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/windows-x86_64/sysroot -IE:/apks/TMP4/xHook/libxhook/jni -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -march=armv7-a -Wformat -Werror=format-security -fPIC -w -s -O3 -Wall -O3 -DNDEBUG  -fPIC -Wall -Wextra -Werror -fvisibility=hidden -std=gnu11 -o CMakeFiles\\xhook.dir\\xhook.c.o -c E:\\apks\\TMP4\\xHook\\libxhook\\jni\\xhook.c",
+  "file": "E:\\apks\\TMP4\\xHook\\libxhook\\jni\\xhook.c"
+},
+{
+  "directory": "E:/apks/TMP4/xHook/libxhook/jni/armeabi-v7a",
+  "command": "C:\\Users\\pc\\AppData\\Local\\Android\\Sdk\\ndk\\25.1.8937393\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang.exe --target=armv7-none-linux-androideabi21 --sysroot=C:/Users/pc/AppData/Local/Android/Sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/windows-x86_64/sysroot -IE:/apks/TMP4/xHook/libxhook/jni -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -march=armv7-a -Wformat -Werror=format-security -fPIC -w -s -O3 -Wall -O3 -DNDEBUG  -fPIC -Wall -Wextra -Werror -fvisibility=hidden -std=gnu11 -o CMakeFiles\\xhook.dir\\xh_core.c.o -c E:\\apks\\TMP4\\xHook\\libxhook\\jni\\xh_core.c",
+  "file": "E:\\apks\\TMP4\\xHook\\libxhook\\jni\\xh_core.c"
+},
+{
+  "directory": "E:/apks/TMP4/xHook/libxhook/jni/armeabi-v7a",
+  "command": "C:\\Users\\pc\\AppData\\Local\\Android\\Sdk\\ndk\\25.1.8937393\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang.exe --target=armv7-none-linux-androideabi21 --sysroot=C:/Users/pc/AppData/Local/Android/Sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/windows-x86_64/sysroot -IE:/apks/TMP4/xHook/libxhook/jni -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -march=armv7-a -Wformat -Werror=format-security -fPIC -w -s -O3 -Wall -O3 -DNDEBUG  -fPIC -Wall -Wextra -Werror -fvisibility=hidden -std=gnu11 -o CMakeFiles\\xhook.dir\\xh_elf.c.o -c E:\\apks\\TMP4\\xHook\\libxhook\\jni\\xh_elf.c",
+  "file": "E:\\apks\\TMP4\\xHook\\libxhook\\jni\\xh_elf.c"
+},
+{
+  "directory": "E:/apks/TMP4/xHook/libxhook/jni/armeabi-v7a",
+  "command": "C:\\Users\\pc\\AppData\\Local\\Android\\Sdk\\ndk\\25.1.8937393\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang.exe --target=armv7-none-linux-androideabi21 --sysroot=C:/Users/pc/AppData/Local/Android/Sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/windows-x86_64/sysroot -IE:/apks/TMP4/xHook/libxhook/jni -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -march=armv7-a -Wformat -Werror=format-security -fPIC -w -s -O3 -Wall -O3 -DNDEBUG  -fPIC -Wall -Wextra -Werror -fvisibility=hidden -std=gnu11 -o CMakeFiles\\xhook.dir\\xh_jni.c.o -c E:\\apks\\TMP4\\xHook\\libxhook\\jni\\xh_jni.c",
+  "file": "E:\\apks\\TMP4\\xHook\\libxhook\\jni\\xh_jni.c"
+},
+{
+  "directory": "E:/apks/TMP4/xHook/libxhook/jni/armeabi-v7a",
+  "command": "C:\\Users\\pc\\AppData\\Local\\Android\\Sdk\\ndk\\25.1.8937393\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang.exe --target=armv7-none-linux-androideabi21 --sysroot=C:/Users/pc/AppData/Local/Android/Sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/windows-x86_64/sysroot -IE:/apks/TMP4/xHook/libxhook/jni -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -march=armv7-a -Wformat -Werror=format-security -fPIC -w -s -O3 -Wall -O3 -DNDEBUG  -fPIC -Wall -Wextra -Werror -fvisibility=hidden -std=gnu11 -o CMakeFiles\\xhook.dir\\xh_log.c.o -c E:\\apks\\TMP4\\xHook\\libxhook\\jni\\xh_log.c",
+  "file": "E:\\apks\\TMP4\\xHook\\libxhook\\jni\\xh_log.c"
+},
+{
+  "directory": "E:/apks/TMP4/xHook/libxhook/jni/armeabi-v7a",
+  "command": "C:\\Users\\pc\\AppData\\Local\\Android\\Sdk\\ndk\\25.1.8937393\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang.exe --target=armv7-none-linux-androideabi21 --sysroot=C:/Users/pc/AppData/Local/Android/Sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/windows-x86_64/sysroot -IE:/apks/TMP4/xHook/libxhook/jni -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -march=armv7-a -Wformat -Werror=format-security -fPIC -w -s -O3 -Wall -O3 -DNDEBUG  -fPIC -Wall -Wextra -Werror -fvisibility=hidden -std=gnu11 -o CMakeFiles\\xhook.dir\\xh_util.c.o -c E:\\apks\\TMP4\\xHook\\libxhook\\jni\\xh_util.c",
+  "file": "E:\\apks\\TMP4\\xHook\\libxhook\\jni\\xh_util.c"
+},
+{
+  "directory": "E:/apks/TMP4/xHook/libxhook/jni/armeabi-v7a",
+  "command": "C:\\Users\\pc\\AppData\\Local\\Android\\Sdk\\ndk\\25.1.8937393\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang.exe --target=armv7-none-linux-androideabi21 --sysroot=C:/Users/pc/AppData/Local/Android/Sdk/ndk/25.1.8937393/toolchains/llvm/prebuilt/windows-x86_64/sysroot -IE:/apks/TMP4/xHook/libxhook/jni -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -march=armv7-a -Wformat -Werror=format-security -fPIC -w -s -O3 -Wall -O3 -DNDEBUG  -fPIC -Wall -Wextra -Werror -fvisibility=hidden -std=gnu11 -o CMakeFiles\\xhook.dir\\xh_version.c.o -c E:\\apks\\TMP4\\xHook\\libxhook\\jni\\xh_version.c",
+  "file": "E:\\apks\\TMP4\\xHook\\libxhook\\jni\\xh_version.c"
+}
+]

@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 3.5)
+
+project(art_work)
+
+set(CMAKE_CXX_STANDARD 17)
+
+add_library(${PROJECT_NAME} INTERFACE)
+
+file(GLOB ART_WORK_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
+file(GLOB ART_WORK_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+
+target_sources(${PROJECT_NAME} INTERFACE ${ART_WORK_SOURCES})
+target_include_directories(${PROJECT_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})

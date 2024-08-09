@@ -1,0 +1,43 @@
+
+# generated file
+/build*
+/demos/*.pem
+/demos/.private
+/demos/scripts/*.pem
+/demos/scripts/*.der
+/demos/scripts/*.txt
+/demos/scripts/*.bin
+/demos/scripts/*.sig
+
+# Object files
+*.o
+*.obj
+
+# All kinds of executables
+#*.so
+*.so.*
+*.dylib
+*.dylib.*
+*.dll
+*.dll.*
+*.exe
+*.pyc
+*.exp
+*.lib
+*.pdb
+*.ilk
+*.def
+*.rc
+*.res
+
+# macOS
+.DS_Store
+*.tar.gz
+
+# editor artefacts
+.vscode/*
+*.swp
+.#*
+\#*#
+*~
+

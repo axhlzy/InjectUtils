@@ -1,0 +1,17 @@
+bin/
+build/
+blocks/
+bii/build
+bii/cmake
+bii/deps
+bii/lib
+bii/.hive.db
+build.log
+.idea/
+cmake-build-debug/
+cmake-build-debug-visual-studio/
+.vscode
+install
+.DS_Store
+*.out
+*.swp

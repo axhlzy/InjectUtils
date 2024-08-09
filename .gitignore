@@ -1,0 +1,11 @@
+build
+.vscode/sftp.json
+.vscode/c_cpp_properties.json
+plugins/android/art/*
+plugins/android/core/*
+plugins/android/libbase/*
+plugins/android/bionic/*
+plugins/android/libraries/*
+
+prebuilt/arm64-v8a
+prebuilt/armeabi-v7a

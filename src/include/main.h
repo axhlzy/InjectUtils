@@ -1,0 +1,80 @@
+#if !defined(MAIN_CPP_H)
+#define MAIN_CPP_H
+
+#include "LuaLibrary.h"
+#include "UnityResolve.hpp"
+#include "bindings.h"
+#include "debugbreak.h"
+#include "dobby.h"
+
+#include "Injector/KittyInjector.hpp"
+#include "KittyMemoryMgr.hpp"
+#include <algorithm>
+#include <android/log.h>
+#include <iostream>
+#include <jni.h>
+#include <stdio.h>
+#include <thread>
+#include <vector>
+#include <xdl.h>
+
+#include "capstone/capstone.h"
+#include "keystone/keystone.h"
+
+#include "log.h"
+
+extern KittyInjector kitInjector;
+extern KittyMemoryMgr kittyMemMgr;
+
+#ifdef __linux__
+#include <dlfcn.h>
+#define GetModuleHandle dlopen
+#endif
+#ifdef DEBUG_PROJECT
+#define DEBUG_PRINT(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
+#else
+#define DEBUG_PRINT(fmt, ...)
+#endif
+
+// 测试的时候使用 （直接启动本地lua虚拟机同事使用测试代码及日志）
+#define DEBUG_LOCAL true
+
+// 兼容luabridge3对void*特化成 userdata 导致控制台不能直接输入数字视作void*的问题
+#ifndef PTR
+#define PTR uintptr_t
+#endif
+
+#ifndef EXEC_NAME
+#define EXEC_NAME "Injector"
+#endif
+
+#define __MAIN__ __attribute__((constructor))
+#define __EXIT__ __attribute__((destructor))
+#define NORETURN __attribute__((noreturn))
+#define NOINLINE __attribute__((__noinline__))
+#define INLINE __attribute__((__inline__))
+#define likely(x) __builtin_expect(!!(x), 1)
+#define unlikely(x) __builtin_expect(!!(x), 0)
+#define xASM(x) __asm __volatile__(x)
+#define MACRO_HIDE_SYMBOL __attribute__((visibility("hidden")))
+#define MACRO_SHOW_SYMBOL __attribute__((visibility("default")))
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+JNIEXPORT jint JNICALL
+JNI_OnLoad(JavaVM *vm, void *reserved);
+
+__attribute__((visibility("default"))) void startLuaVM();
+__attribute__((visibility("default"))) void initVM();
+
+#ifdef __cplusplus
+}
+#endif
+
+extern lua_State *G_LUA;
+
+std::string get_self_path();
+
+#endif // MAIN_CPP_H

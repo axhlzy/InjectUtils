@@ -1,0 +1,4 @@
+arm32/lib/*.a
+arm32/lib/*.so
+arm64/lib/*.a
+arm64/lib/*.so
