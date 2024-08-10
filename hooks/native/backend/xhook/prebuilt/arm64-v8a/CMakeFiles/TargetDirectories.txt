@@ -1,3 +1,0 @@
-E:/apks/TMP4/xHook/libxhook/jni/arm64-v8a/CMakeFiles/xhook.dir
-E:/apks/TMP4/xHook/libxhook/jni/arm64-v8a/CMakeFiles/edit_cache.dir
-E:/apks/TMP4/xHook/libxhook/jni/arm64-v8a/CMakeFiles/rebuild_cache.dir

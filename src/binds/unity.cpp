@@ -19,7 +19,7 @@ public:
         std::for_each(assemblies.begin(), assemblies.end(), [&](auto item) {
             // std::cout << item->name << "\tAssembly address: " << item->address << std::endl;
             // logd("%p -> %s", item->address, item->name.c_str()); });
-            printf("[%d] %p -> %s\n", ++index, item->address, item->name.c_str());
+            console->info("[{}] {} -> {}\n", ++index, (void *)item->address, item->name);
         });
     }
 
