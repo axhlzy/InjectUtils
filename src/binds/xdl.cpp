@@ -23,7 +23,7 @@ public:
     xdl_bind() {}
 
     void info() {
-        auto handle = xdl_open(EXEC_NAME, RTLD_LAZY);
+        auto handle = xdl_open(EXEC_NAME, XDL_DEFAULT);
         if (handle == nullptr) {
             console->info("xdl_open failed\n");
         }
@@ -41,7 +41,7 @@ public:
     void info(const char *lib) {
         if (lib == "")
             return info();
-        auto handle = xdl_open(lib, RTLD_LAZY);
+        auto handle = xdl_open(lib, XDL_DEFAULT);
         if (handle == nullptr) {
             console->info("xdl_open failed\n");
         }
@@ -50,7 +50,7 @@ public:
 
     void addressInfo(PTR p) {
         xdl_info_t info;
-        auto handle = xdl_open(EXEC_NAME, RTLD_LAZY);
+        auto handle = xdl_open(EXEC_NAME, XDL_DEFAULT);
         if (handle == nullptr) {
             console->info("xdl_open failed\n");
             return;
@@ -64,14 +64,14 @@ public:
     void findSymbyName(const char *lib, const char *name) {
         if (lib == "")
             lib = EXEC_NAME;
-        auto handle = xdl_open(lib, RTLD_LAZY);
+        auto handle = xdl_open(lib, XDL_DEFAULT);
         void *func = xdl_sym(handle, name, nullptr);
         console->info("{} @ {}\n", func, name);
         xdl_close(handle);
     }
 
     void iterate_phdr() {
-        auto handle = xdl_open(EXEC_NAME, RTLD_LAZY);
+        auto handle = xdl_open(EXEC_NAME, XDL_DEFAULT);
         xdl_iterate_phdr(
             [](struct dl_phdr_info *info, size_t size, void *data) -> int {
                 console->info("dlpi_name: {}\n", info->dlpi_name);

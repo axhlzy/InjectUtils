@@ -79,7 +79,7 @@ void reg_crash_handler() {
 
 KittyMemoryMgr kittyMemMgr;
 void init_kittyMemMgr() {
-    if (!kittyMemMgr.initialize(getpid(), EK_MEM_OP_SYSCALL, true)) {
+    if (!kittyMemMgr.initialize(getpid(), EK_MEM_OP_IO, true)) {
         loge("KittyMemoryMgr initialize Error occurred )':");
         console->info("KittyMemoryMgr initialize Error occurred )':");
         return;

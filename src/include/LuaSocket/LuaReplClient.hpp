@@ -47,7 +47,7 @@ public:
         }
     }
 
-    void close() {
+    void close_connect() {
         boost::system::error_code ec;
         socket_.close(ec);
         if (ec) {

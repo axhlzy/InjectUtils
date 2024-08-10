@@ -8,6 +8,14 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <fcntl.h>
+#include <linux/ashmem.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <unistd.h>
+
 #include "LuaSocket/LuaReplClient.hpp"
 
 int main(int argc, char *argv[]) {
@@ -56,7 +64,7 @@ int main(int argc, char *argv[]) {
             if (input.empty())
                 continue;
             if (input == "exit" || input == "q") {
-                client.close();
+                client.close_connect();
                 break;
             }
             client.send_message(input, [](const std::string &response) {

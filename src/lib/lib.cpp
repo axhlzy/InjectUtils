@@ -36,6 +36,7 @@ void repl(lua_State *L) {
 
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *vm, void *reserved) {
+
     if (vm == nullptr && reserved == nullptr) {
         startLuaVM();
     } else {
@@ -54,6 +55,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved) {
         });
         g_thread->detach();
     }
+
     return JNI_VERSION_1_6;
 }
 
