@@ -71,9 +71,11 @@ setenforce 0
 
 然后界面没有提示，但是是一个阻塞的socket，可以当作lua shell使用, 参考下图可见已经成功注入了该应用
 
-![xdl:info()](https://github.com/axhlzy/AndroidUnityInjector/blob/main/images/inject_nc_test.png)
+![xdl:info()](https://github.com/axhlzy/InjectUtils/blob/main/images/inject_nc_test.png)
 
-![asm](https://github.com/axhlzy/AndroidUnityInjector/blob/main/images/asm.png)
+![asm](https://github.com/axhlzy/InjectUtils/blob/main/images/asm.png)
+
+![linker](https://github.com/axhlzy/InjectUtils/blob/main/images/linker.png)
 
 这里参考代码中xdl的绑定
 
