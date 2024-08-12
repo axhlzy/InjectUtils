@@ -2,6 +2,35 @@
 
 constexpr int SIZE_OF_STR = 1024;
 
+#include <dirent.h>
+#include <fstream>
+#include <iostream>
+#include <signal.h>
+#include <string>
+#include <unistd.h>
+
+void listThreads(pid_t pid) {
+    DIR *dir;
+    struct dirent *ent;
+    std::string path = "/proc/" + std::to_string(pid) + "/task/";
+
+    if ((dir = opendir(path.c_str())) != nullptr) {
+        while ((ent = readdir(dir)) != nullptr) {
+            std::string tid(ent->d_name);
+            if (tid != "." && tid != "..") {
+                console->info("ID:{} [ '{}' ]", tid, getThreadName(std::stoi(tid)));
+            }
+        }
+        closedir(dir);
+    } else {
+        perror("Couldn't open directory");
+    }
+}
+
+void listThreads() {
+    listThreads(getpid());
+}
+
 BINDFUNC(global) {
 
     luabridge::getGlobalNamespace(L)
@@ -13,6 +42,12 @@ BINDFUNC(global) {
             "threadid", *[]() { std::cout << std::this_thread::get_id(); })
         .addFunction(
             "ls", *[]() { system("ls"); });
+
+    luabridge::getGlobalNamespace(L)
+        .addFunction("listThreads",
+                     luabridge::overload<int>(listThreads),
+                     luabridge::overload<>(listThreads))
+        .addFunction("getStat", [](pid_t tid) { console->info(getStat(tid)); });
 
     // reg obj parser
     luabridge::getGlobalNamespace(L)

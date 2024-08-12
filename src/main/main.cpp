@@ -84,7 +84,8 @@ int main(int argc, char *argv[]) {
                 break;
             }
             client.send_message(input, [](const std::string &response) {
-                std::cout << response << std::endl;
+                std::cout << "\n"
+                          << response << std::endl;
             });
         }
     }

@@ -2,7 +2,7 @@
 
 using namespace std;
 
-string get_self_path() {
+string getSelfPath() {
     char buf[1024];
     ssize_t len = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
     if (len != -1) {
@@ -11,6 +11,49 @@ string get_self_path() {
     } else {
         return "";
     }
+}
+
+std::string getStat(pid_t tid) {
+    std::string path = "/proc/" + std::to_string(tid) + "/stat";
+    std::ifstream statFile(path);
+
+    if (!statFile.is_open()) {
+        std::cerr << "Failed to open file for process ID " << tid << std::endl;
+        return "";
+    }
+
+    std::string line;
+    std::getline(statFile, line);
+    statFile.close();
+
+    std::istringstream iss(line);
+    long pid;         // 进程ID
+    std::string comm; // 进程名称
+    char state;       // 进程状态
+    long ppid;        // 父进程ID
+    long pgrp;        // 进程组ID
+
+    iss >> pid >> comm >> state >> ppid >> pgrp;
+
+    std::ostringstream result;
+    result << "PID: " << pid << "\n"
+           << "Command: " << comm << "\n"
+           << "State: " << state << "\n"
+           << "Parent PID: " << ppid << " [ " << getThreadName(ppid) << " ]" << "\n"
+           << "Process Group ID: " << pgrp << "\n";
+
+    return result.str();
+}
+
+std::string getThreadName(pid_t tid) {
+    std::ifstream file(fmt::format("/proc/{}/comm", tid));
+    std::string threadName;
+    if (file.good()) {
+        std::getline(file, threadName);
+    } else {
+        threadName = "unknown";
+    }
+    return threadName;
 }
 
 class Timer {
@@ -97,7 +140,7 @@ private:
 KittyInjector kitInjector;
 std::chrono::duration<double, std::milli> inj_ms{};
 void inject(pid_t pid) {
-    string lib = get_self_path();
+    string lib = getSelfPath();
     bool use_memfd = false, hide_maps = false, hide_solist = false, stopped = false;
 
     injected_info_t ret{};

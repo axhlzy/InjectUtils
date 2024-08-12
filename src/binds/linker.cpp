@@ -154,7 +154,7 @@ void disp_link_map_head() {
     auto soname = reinterpret_cast<fn_get_soname>(addr_getSoName)(info);
     auto link_current = info->link_map_head;
     auto load_bias = info->load_bias;
-    console->info("{} {} | link_map_head : {} | load_bias : {}", (void *)info, soname, (void *)&link, load_bias);
+    console->info("{} {} | link_map_head : {} | load_bias : {}\n", (void *)info, soname, (void *)&link, load_bias);
 
     struct link_map *l_next = &link_current;
 
@@ -173,8 +173,8 @@ BINDFUNC(linker) {
     init();
     luabridge::getGlobalNamespace(L)
         .beginNamespace("linker")
-        .addFunction("somain", get_somain)
-        .addFunction("disp_soinfo_link", disp_soinfo_link)
-        .addFunction("disp_link_map_head", disp_link_map_head)
+        .addFunction("somain", &get_somain)
+        .addFunction("disp_soinfo_link", &disp_soinfo_link)
+        .addFunction("disp_link_map_head", &disp_link_map_head)
         .endNamespace();
 }

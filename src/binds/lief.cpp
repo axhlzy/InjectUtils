@@ -2,7 +2,7 @@
 #include "bindings.h"
 
 void lief_open_self(const char *symName) {
-    auto lief = LIEF::ELF::Parser::parse(get_self_path());
+    auto lief = LIEF::ELF::Parser::parse(getSelfPath());
     if (lief == nullptr) {
         console->error("LIEF: Failed to parse self");
         return;

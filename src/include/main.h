@@ -104,7 +104,9 @@ void reg_crash_handler();
 
 INLINE void init_kittyMemMgr();
 
-std::string get_self_path();
+std::string getSelfPath();
+std::string getThreadName(pid_t id);
+std::string getStat(pid_t tid);
 
 void set_selinux_state(bool status = false);
 
