@@ -79,7 +79,7 @@ void capstone_bind(PTR arm64_code) {
     capstone_bind(arm64_code, 10);
 }
 
-void reg_asm(lua_State *L) {
+BINDFUNC(asm) {
     luabridge::getGlobalNamespace(L)
         .beginNamespace("asm")
         .addFunction("ks",
@@ -89,8 +89,6 @@ void reg_asm(lua_State *L) {
                      luabridge::overload<PTR>(&capstone_bind),
                      luabridge::overload<PTR, size_t>(&capstone_bind))
         .endNamespace();
-
-    console->info("[*] luabridge bind {}", "asm");
 
     // // test
     // keystone_bind("mov x0, x1; b.eq 0x100");

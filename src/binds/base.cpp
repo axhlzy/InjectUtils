@@ -41,7 +41,6 @@ void findsyms(const char *mdName, const char *symName) {
         console->error("[*] scanner : Elf is invalid");
         return;
     }
-    //  scanner.symbols();
     auto syms = scanner.symbols();
     int i = -1;
 
@@ -58,20 +57,12 @@ void findsyms(const char *mdName, const char *symName) {
     }
 }
 
-void reg_base(lua_State *L) {
-
+BINDFUNC(base) {
     // .addFunction("xdl_sym",
     //              luabridge::overload<PTR, const char *>(&xdl_bind::_xdl_sym),
     //              luabridge::overload<PTR, const char *, ElfW(Sym) *>(&xdl_bind::_xdl_sym))
-
     luabridge::getGlobalNamespace(L)
-        .addFunction("syms", luabridge::overload<const char *>(&iterSyms));
-
-    luabridge::getGlobalNamespace(L)
-        .addFunction("syms", luabridge::overload<>(*[]() { iterSyms("libil2cpp.so"); }));
-
-    luabridge::getGlobalNamespace(L)
+        .addFunction("syms", luabridge::overload<const char *>(&iterSyms))
+        .addFunction("syms", luabridge::overload<>(*[]() { iterSyms("libil2cpp.so"); }))
         .addFunction("findsyms", luabridge::overload<const char *, const char *>(&findsyms));
-
-    console->info("[*] luabridge bind {}", "base");
 }

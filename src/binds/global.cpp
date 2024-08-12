@@ -2,7 +2,7 @@
 
 constexpr int SIZE_OF_STR = 1024;
 
-void reg_global(lua_State *L) {
+BINDFUNC(global) {
 
     luabridge::getGlobalNamespace(L)
         .addFunction(
@@ -48,6 +48,4 @@ void reg_global(lua_State *L) {
             snprintf(buf, SIZE_OF_STR, str0, obj);
             luaL_dostring(L, str0);
         });
-
-    console->info("[*] luabridge bind {}", "global");
 }

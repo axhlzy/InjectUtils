@@ -102,7 +102,7 @@ void chat(const char *msg) {
     test_chat();
 }
 
-void reg_oai(lua_State *L) {
+BINDFUNC(oai) {
     luabridge::getGlobalNamespace(L)
         .beginNamespace("oai")
         .addFunction("chat", &chat)
@@ -110,6 +110,4 @@ void reg_oai(lua_State *L) {
         .beginNamespace("curl")
         .addFunction("test", &test_curl)
         .endNamespace();
-
-    console->info("[*] luabridge bind {}", "oai");
 }

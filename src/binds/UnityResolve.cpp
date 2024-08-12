@@ -1,6 +1,6 @@
 #include "bindings.h"
 
-void reg_UnityResolve(lua_State *L) {
+BINDFUNC(UnityResolve) {
     luabridge::getGlobalNamespace(L)
         .beginClass<UnityResolve>("UnityResolve")
         // .addStaticFunction("Init", &UnityResolve::Init)
@@ -68,5 +68,4 @@ void reg_UnityResolve(lua_State *L) {
 
     static auto unity = new UnityResolve();
     luabridge::setGlobal(L, unity, "UR");
-    console->info("[*] luabridge bind {}", "UnityResolve");
 }

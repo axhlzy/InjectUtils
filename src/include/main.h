@@ -1,29 +1,32 @@
 #if !defined(MAIN_CPP_H)
 #define MAIN_CPP_H
 
+#include "Injector/KittyInjector.hpp"
+#include "KittyMemoryMgr.hpp"
 #include "LuaLibrary.h"
 #include "UnityResolve.hpp"
 #include "bindings.h"
+#include "capstone/capstone.h"
+#include "common_enum.hpp"
 #include "debugbreak.h"
 #include "dobby.h"
+#include "keystone/keystone.h"
+#include "log.h"
+#include "magic_enum_all.hpp"
+#include "syscalls_enum.h"
+#include "xdl.h"
 
-#include "Injector/KittyInjector.hpp"
-#include "KittyMemoryMgr.hpp"
 #include <algorithm>
 #include <android/log.h>
 #include <iostream>
 #include <jni.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <sys/types.h>
 #include <thread>
+#include <unistd.h>
 #include <vector>
-#include <xdl.h>
-
-#include "magic_enum_all.hpp"
-
-#include "capstone/capstone.h"
-#include "keystone/keystone.h"
-
-#include "log.h"
 
 extern KittyInjector kitInjector;
 extern KittyMemoryMgr kittyMemMgr;

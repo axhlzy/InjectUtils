@@ -6,16 +6,37 @@
 #define LINKERNAME "linker"
 #endif
 
+static void *addr_getSoName = NULL;
+static void *addr_get_somain = NULL;
+
+#include "linker_soinfo.h"
+using fn_get_soname = const char *(*)(soinfo *);
+using fn_get_somain = soinfo *(*)(void);
+
+void init() {
+    void *handle = xdl_open(LINKERNAME, XDL_DEFAULT);
+    if (handle == nullptr)
+        throw std::runtime_error("Open linker failed");
+
+    // get somain
+    addr_getSoName = xdl_dsym(handle, "__dl__ZNK6soinfo10get_sonameEv", NULL);
+    using fn_get_soname = const char *(*)(soinfo *);
+    if (addr_getSoName == nullptr)
+        throw std::runtime_error("linker : get_soname failed");
+
+    // get soname
+    addr_get_somain = xdl_dsym(handle, "__dl__Z17solist_get_somainv", NULL);
+    using fn_get_somain = soinfo *(*)(void);
+    if (addr_get_somain == nullptr)
+        throw std::runtime_error("linker : get_somain failed");
+
+    xdl_close(handle);
+}
+
 // __dl__Z17solist_get_somainv
 PTR get_somain() {
-    void *handle = xdl_open(LINKERNAME, XDL_DEFAULT);
-    ElfW(Sym) sym;
-    void *addr = xdl_dsym(handle, "__dl__Z17solist_get_somainv", &sym);
-    const auto st_value = sym.st_value;
-    console->warn("got [ __dl__Z17solist_get_somainv ] -> {} | st_value : {}", addr, st_value);
     using fn = PTR (*)(void);
-    auto ret = reinterpret_cast<fn>(addr)();
-    xdl_close(handle);
+    auto ret = reinterpret_cast<fn>(addr_get_somain)();
     console->warn("got [ soinfo* main ] -> {}", (void *)ret);
     return ret;
 }
@@ -103,18 +124,9 @@ PTR get_somain() {
 //   gap_size_ = 0
 // }
 
-#include "linker_soinfo.h"
 void disp_soinfo_link() {
 
     void *handle = xdl_open(LINKERNAME, XDL_DEFAULT);
-
-    // get somain
-    void *addr_getSoName = xdl_dsym(handle, "__dl__ZNK6soinfo10get_sonameEv", NULL);
-    using fn_get_soname = const char *(*)(soinfo *);
-
-    // get soname
-    void *addr_get_somain = xdl_dsym(handle, "__dl__Z17solist_get_somainv", NULL);
-    using fn_get_somain = soinfo *(*)(void);
 
     auto info = reinterpret_cast<fn_get_somain>(addr_get_somain)();
     auto next = info->next;
@@ -136,16 +148,6 @@ void disp_soinfo_link() {
 }
 
 void disp_link_map_head() {
-    void *handle = xdl_open(LINKERNAME, XDL_DEFAULT);
-
-    // get somain
-    void *addr_getSoName = xdl_dsym(handle, "__dl__ZNK6soinfo10get_sonameEv", NULL);
-    using fn_get_soname = const char *(*)(soinfo *);
-
-    // get soname
-    void *addr_get_somain = xdl_dsym(handle, "__dl__Z17solist_get_somainv", NULL);
-    using fn_get_somain = soinfo *(*)(void);
-
     auto info = reinterpret_cast<fn_get_somain>(addr_get_somain)();
     auto next = info->next;
 
@@ -165,16 +167,14 @@ void disp_link_map_head() {
                       static_cast<void *>(l_next->l_prev));
         l_next = l_next->l_next;
     } while (l_next != NULL);
-
-    xdl_close(handle);
 }
 
-void reg_linker(lua_State *L) {
+BINDFUNC(linker) {
+    init();
     luabridge::getGlobalNamespace(L)
         .beginNamespace("linker")
         .addFunction("somain", get_somain)
         .addFunction("disp_soinfo_link", disp_soinfo_link)
         .addFunction("disp_link_map_head", disp_link_map_head)
         .endNamespace();
-    console->info("[*] luabridge bind {}", "linker");
 }

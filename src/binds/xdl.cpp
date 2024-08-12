@@ -152,7 +152,7 @@ private:
     }
 };
 
-void reg_xdl(lua_State *L) {
+BINDFUNC(xdl) {
     luabridge::getGlobalNamespace(L)
         .beginClass<xdl_bind>("xdl_bind")
         .addConstructor<void (*)()>()
@@ -176,5 +176,4 @@ void reg_xdl(lua_State *L) {
         .endClass();
     static auto xdl = new xdl_bind();
     luabridge::setGlobal(L, xdl, "xdl");
-    console->info("[*] luabridge bind {}", "xdl");
 }

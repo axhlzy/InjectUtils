@@ -15,12 +15,9 @@ void lief_open_self(const char *symName) {
     }
 }
 
-void reg_lief(lua_State *L) {
-
+BINDFUNC(lief) {
     luabridge::getGlobalNamespace(L)
         .beginNamespace("lief")
         .addFunction("sefsyms", &lief_open_self)
         .endNamespace();
-
-    console->info("[*] luabridge bind {}", "lief");
 }

@@ -28,7 +28,7 @@ public:
     }
 };
 
-void reg_unity(lua_State *L) {
+BINDFUNC(unity) {
     luabridge::getGlobalNamespace(L)
         .beginClass<unity_bind>("unity_bind")
         .addFunction("info", &unity_bind::info)
@@ -36,12 +36,8 @@ void reg_unity(lua_State *L) {
         .addFunction("Get", &unity_bind::Get)
         .endClass();
     void *handle_xdl = xdl_open("libil2cpp.so", RTLD_LAZY);
-    if (handle_xdl == nullptr) {
-        console->error("[*] luabridge bind unity failed");
-        return;
-    }
+    if (handle_xdl == nullptr)
+        throw std::runtime_error(fmt::format("[*] luabridge bind unity failed @ [ {}:{} ]", __func__, __LINE__));
     static auto unity = new unity_bind();
     luabridge::setGlobal(L, unity, "unity");
-
-    console->info("[*] luabridge bind {}", "unity");
 }

@@ -53,7 +53,7 @@ public:
     }
 };
 
-void reg_dobby(lua_State *L) {
+BINDFUNC(dobby) {
     luabridge::getGlobalNamespace(L)
         .beginClass<dobby_bind>("dobby_bind")
         .addFunction("n", &dobby_bind::n)
@@ -64,5 +64,4 @@ void reg_dobby(lua_State *L) {
         .endNamespace();
     static auto dobby = new dobby_bind();
     luabridge::setGlobal(L, dobby, "dobby_bind");
-    console->info("[*] luabridge bind {}", "dobby");
 }
