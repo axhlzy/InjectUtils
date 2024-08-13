@@ -1,6 +1,7 @@
 #include "main.h"
 #include "LuaSocket/LuaReplClient.hpp"
 #include "cxxopts.hpp"
+#include <KittyMemoryEx.hpp>
 // #include "test.h"
 
 int main(int argc, char *argv[]) {
@@ -84,10 +85,7 @@ int main(int argc, char *argv[]) {
                 client.close_connect();
                 break;
             }
-            client.send_message(input, [](const std::string &response) {
-                std::cout << "\n"
-                          << response << std::endl;
-            });
+            client.send_message(input);
         }
     }
 

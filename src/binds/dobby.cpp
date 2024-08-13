@@ -17,39 +17,25 @@ public:
     }
 
     // nop
-    void n(size_t p) {
-
-        console->info("nop -> {}\n", p);
-
-        void *address = (void *)p;
-
-        if (hookMap.find(address) != hookMap.end()) {
-            console->info("DobbyHook already hooked\n");
-            return;
-        } else {
-            hookMap[address] = nullptr;
-        }
-        cur_list[++count_hook_index] = address;
-        auto replace_call = (void *)*[](void *arg0, void *arg1, void *arg2, void *arg3) {
-            console->info("called nop \n\t[0] -> {}\n\t[1] -> {}\n\t[2] -> {}\n\t[3] -> {} \n", arg0, arg1, arg2, arg3);
-        };
-
-        // int DobbyHook(void *address, dobby_dummy_func_t replace_func, dobby_dummy_func_t *origin_func);
-        DobbyHook(address, replace_call, (dobby_dummy_func_t *)&hookMap[address]);
-        console->info("DobbyHook( {}, {}, {} )\n", (void *)address, (void *)replace_call, (void *)&hookMap[address]);
+    void n(PTR ptr) {
+        console->info("nop -> {:p}\n", (void *)ptr);
+        HK((void *)ptr, [=](void *a, void *b, void *c, void *d) {
+            console->info("Called NOPPED -> {:p}", (void *)ptr);
+        });
     }
 
     // cancel nop
-    void nn(size_t p) {
-        void *address = (void *)p;
+    void nn(PTR ptr) {
+        console->info("cancel nop -> {:p}\n", (void *)ptr);
+        UHK((void *)ptr);
+    }
 
-        if (hookMap.find(address) == hookMap.end()) {
-            console->info("DobbyHook not hooked\n");
-            return;
-        }
-        DobbyDestroy(address);
-        console->info("DobbyDestroy( {} ) | {}\n", (void *)address, (void *)&hookMap[address]);
-        hookMap.erase(address);
+    // means attach
+    void A(PTR ptr, const char *luaExec) {
+        HK((void *)ptr, [=](void *a, void *b, void *c, void *d) {
+            SrcCall((void *)ptr, a, b, c, d);
+            luaL_dostring(G_LUA, luaExec);
+        });
     }
 };
 
@@ -58,6 +44,7 @@ BINDFUNC(dobby) {
         .beginClass<dobby_bind>("dobby_bind")
         .addFunction("n", &dobby_bind::n)
         .addFunction("nn", &dobby_bind::nn)
+        .addFunction("A", &dobby_bind::A)
         .endClass()
         .beginNamespace("dobby")
         .addFunction("version", &dobby_bind::version)

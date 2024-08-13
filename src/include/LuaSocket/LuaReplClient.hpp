@@ -1,66 +1,87 @@
 #include <boost/asio.hpp>
 #include <functional>
 #include <iostream>
+#include <memory>
+#include <thread>
 
-using boost::asio::ip::tcp;
-
+using namespace boost::asio;
+using ip::tcp;
+using std::cerr;
+using std::cout;
+using std::endl;
 using ResponseHandler = std::function<void(const std::string &)>;
 
-constexpr long MAXLEN = 0x1000 * 1000;
+constexpr long MAXLEN = 0x1000 * 0x1000 * 2;
 
 class LuaReplClient {
 public:
     LuaReplClient(const std::string &server_port, const std::string &server_ip = "127.0.0.1")
-        : server_ip_(server_ip), server_port_(server_port), io_context_(), socket_(io_context_), reply_(new char[MAXLEN]) {}
+        : server_ip_(server_ip),
+          server_port_(server_port),
+          io_context_(),
+          socket_(io_context_),
+          reply_(new char[MAXLEN]) {
+        work_guard = std::make_unique<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>(
+            boost::asio::make_work_guard(io_context_));
+    }
+
+    ~LuaReplClient() {
+        io_context_.stop();
+        if (thread_ && thread_->joinable()) {
+            thread_->join();
+        }
+    }
 
     void connect() {
         while (true) {
             try {
                 tcp::resolver resolver(io_context_);
-                tcp::resolver::results_type endpoints = resolver.resolve(server_ip_, server_port_);
+                auto endpoints = resolver.resolve(server_ip_, server_port_);
                 boost::asio::connect(socket_, endpoints);
-                std::cout << "Connected to server at " << server_ip_ << ":" << server_port_ << std::endl;
+                cout << "Connected to server at " << server_ip_ << ":" << server_port_ << endl;
+
+                start_receive();
+                thread_ = std::make_unique<std::thread>([this]() { io_context_.run(); });
                 break;
             } catch (const std::exception &e) {
-                std::cerr << "Connection error: " << e.what() << std::endl;
-                std::cout << "Retrying in 1 second..." << std::endl;
+                cerr << "Connection error: " << e.what() << endl;
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
         }
     }
 
-    void send_message(const std::string &message, ResponseHandler handler) {
-        try {
-            boost::asio::write(socket_, boost::asio::buffer(message));
-            boost::system::error_code error;
-            std::memset(reply_.get(), 0, MAXLEN);
-            size_t reply_length = socket_.read_some(boost::asio::buffer(reply_.get(), MAXLEN), error);
-            if (error == boost::asio::error::eof) {
-                handler("Connection closed");
-            } else if (error) {
-                throw boost::system::system_error(error);
-            } else {
-                handler(std::string(reply_.get(), reply_length));
+    void send_message(const std::string &message) {
+        boost::asio::async_write(socket_, boost::asio::buffer(message), [this](boost::system::error_code ec, std::size_t /*length*/) {
+            if (ec) {
+                cerr << "Send failed: " << ec.message();
             }
-        } catch (const std::exception &e) {
-            std::cerr << "Communication error: " << e.what() << std::endl;
-        }
+        });
     }
 
     void close_connect() {
-        boost::system::error_code ec;
-        socket_.close(ec);
-        if (ec) {
-            std::cerr << "Close error: " << ec.message() << std::endl;
-        } else {
-            std::cout << "Connection closed." << std::endl;
-        }
+        socket_.close();
+        work_guard.reset();
     }
 
 private:
+    void start_receive() {
+        socket_.async_read_some(boost::asio::buffer(reply_.get(), MAXLEN),
+                                [this](boost::system::error_code ec, std::size_t length) {
+                                    if (!ec) {
+                                        cout << std::string(reply_.get(), length) << endl;
+                                        start_receive();
+                                    } else {
+                                        cerr << "Receive error: " << ec.message() << endl;
+                                        socket_.close();
+                                    }
+                                });
+    }
+
     std::string server_ip_;
     std::string server_port_;
-    boost::asio::io_context io_context_;
+    io_context io_context_;
     tcp::socket socket_;
     std::unique_ptr<char[]> reply_;
+    std::unique_ptr<std::thread> thread_;
+    std::unique_ptr<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_guard;
 };

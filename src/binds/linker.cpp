@@ -369,6 +369,52 @@ std::string get_soinfo(PTR info) {
     return get_soinfo((const soinfo *)info);
 }
 
+void show_symtab(const soinfo *si, size_t max_symbols = -1, bool other = false) {
+    if (!si || !si->symtab_ || !si->strtab_) {
+        std::cerr << "Invalid soinfo pointer or empty symbol/strings tables." << std::endl;
+        return;
+    }
+
+    const char *symtab_end = reinterpret_cast<const char *>(si->strtab_);
+    size_t count = ((uintptr_t)symtab_end - (uintptr_t)si->symtab_) / sizeof(ElfW(Sym));
+
+    std::cout << "\nShowing " << (max_symbols == -1 ? "all" : "up to " + std::to_string(count))
+              << " symbols:\n\n";
+    std::cout << "Index\tValue\t\tSize\tOther\tNameIndex\t\t\tInfo\t\tName\n\n";
+
+    for (size_t i = 0; i < (max_symbols == -1 ? count : max_symbols); ++i) {
+        const ElfW(Sym) *symbol = si->symtab_ + i;
+        const char *symbol_name = si->strtab_ + symbol->st_name;
+
+        auto binding = magic_enum::enum_name((ST_BindingType)ELF_ST_BIND(symbol->st_info)).substr(5);
+        auto type = magic_enum::enum_name((ST_SymbolType)ELF_ST_TYPE(symbol->st_info)).substr(5);
+        auto info = fmt::format(" [ {} | {} ]", binding, type);
+
+        if (other && symbol->st_other == 0)
+            continue;
+
+        std::cout << std::setw(5) << i << '\t'
+                  << std::setw(10) << (void *)(symbol->st_value) << '\t'
+                  << std::setw(4) << (void *)(symbol->st_size) << '\t'
+                  << std::setw(4) << (void *)(symbol->st_other) << '\t'
+                  << std::setw(9) << symbol->st_name << '\t'
+                  << std::setw(10) << static_cast<int>(symbol->st_info) << info << '\t'
+                  << symbol_name << '\n';
+    }
+}
+
+void show_symtab_o(PTR si) {
+    show_symtab(reinterpret_cast<const soinfo *>(si), -1, true);
+}
+
+void show_symtab(PTR si) {
+    show_symtab(reinterpret_cast<const soinfo *>(si), -1);
+}
+
+void show_symtab(PTR si, size_t count) {
+    show_symtab(reinterpret_cast<const soinfo *>(si), count);
+}
+
 #include "Semaphore.hpp"
 #include "dobby.h"
 #include "utils.h"
@@ -396,13 +442,22 @@ void waitSoLoad(const char *filterSoName) {
             SrcCall(addr_call_constructors, info);
             return;
         }
-        console->info("soinfo::call_constructors ( soinfo : {} | base: {} | soName: {})\n{}",
-                      (void *)info, (void *)base, soName.c_str(), get_soinfo(info));
+        console->info("soinfo::call_constructors ( soinfo : {} | base: {} | soName: {})",
+                      (void *)info, (void *)base, soName.c_str());
         if (soName == string(filterSoName)) {
             console->error("STOP AT {}", soName);
+            console->info("{}", get_soinfo(info));
             SEMAPHORE_WAIT
         }
         SrcCall(addr_call_constructors, info);
+    });
+}
+
+void test(PTR ptr, PTR info) {
+    HK((void *)ptr, [=](void *a, void *b, void *c, void *d) {
+        SrcCall((void *)ptr, a, b, c, d);
+        show_soinfo(info);
+        show_symtab(info);
     });
 }
 
@@ -413,11 +468,16 @@ BINDFUNC(linker) {
         .addFunction("somain", &get_somain)
         .addFunction("disp_soinfo_link", &disp_soinfo_link)
         .addFunction("disp_link_map_head", &disp_link_map_head)
+        .addFunction("show_symtab_o", &show_symtab_o)
         .addFunction("get_soinfo",
                      luabridge::overload<PTR>(&get_soinfo),
                      luabridge::overload<const soinfo *, const char *>(&get_soinfo))
         .addFunction("show_soinfo",
                      luabridge::overload<PTR>(&show_soinfo))
         .addFunction("wait", &waitSoLoad)
+        .addFunction("show_symtab",
+                     luabridge::overload<PTR>(&show_symtab),
+                     luabridge::overload<PTR, size_t>(&show_symtab))
+        .addFunction("test", &test)
         .endNamespace();
 }

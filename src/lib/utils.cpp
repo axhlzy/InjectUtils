@@ -2,6 +2,8 @@
 
 using namespace std;
 
+#include "Injector/KittyInjector.hpp"
+#include "KittyMemoryMgr.hpp"
 KittyMemoryMgr kittyMemMgr;
 
 void init_kittyMemMgr() {

@@ -2,8 +2,6 @@
 #define MAIN_CPP_H
 
 #include "HookManager.h"
-#include "Injector/KittyInjector.hpp"
-#include "KittyMemoryMgr.hpp"
 #include "LuaLibrary.h"
 #include "UnityResolve.hpp"
 #include "bindings.h"
@@ -27,9 +25,6 @@
 #include <thread>
 #include <unistd.h>
 #include <vector>
-
-extern KittyInjector kitInjector;
-extern KittyMemoryMgr kittyMemMgr;
 
 #ifdef __linux__
 #include <dlfcn.h>

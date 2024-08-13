@@ -1,5 +1,10 @@
-#include <main.h>
+#include "Injector/KittyInjector.hpp"
+#include "KittyMemoryMgr.hpp"
 
+extern KittyInjector kitInjector;
+extern KittyMemoryMgr kittyMemMgr;
+
+#include <main.h>
 static JavaVM *g_jvm;
 static JNIEnv *env;
 static std::thread *g_thread = NULL;

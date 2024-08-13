@@ -6,6 +6,8 @@
 
 using namespace LIEF;
 
+extern KittyMemoryMgr kittyMemMgr;
+
 void iterSyms(const char *mdName) {
     if (!mdName) {
         console->error("[*] Module name is null");

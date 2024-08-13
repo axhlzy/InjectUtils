@@ -158,7 +158,7 @@ enum class ElfType {
     _ET_CORE = 4
 };
 
-enum class SymbolType {
+enum class ST_SymbolType : int {
     _STT_NOTYPE = 0,
     _STT_OBJECT = 1,
     _STT_FUNC = 2,
@@ -168,7 +168,7 @@ enum class SymbolType {
     _STT_TLS = 6
 };
 
-enum class BindingType {
+enum class ST_BindingType : int {
     _STB_LOCAL = 0,
     _STB_GLOBAL = 1,
     _STB_WEAK = 2
