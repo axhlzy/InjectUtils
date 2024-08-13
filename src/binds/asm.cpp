@@ -6,7 +6,7 @@
 ks_arch KS_CURRENT_ARCH = KS_ARCH_ARM64;
 ks_mode KS_CURRENT_MODE = KS_MODE_LITTLE_ENDIAN;
 
-cs_arch CS_CURRENT_ARCH = CS_ARCH_AARCH64;
+cs_arch CS_CURRENT_ARCH = CS_ARCH_ARM64;
 cs_mode CS_CURRENT_MODE = CS_MODE_ARM;
 
 void keystone_bind(const char *assembly_code, const char *arch) {

@@ -6,7 +6,7 @@ file(GLOB_RECURSE SOURCES front/*.cpp front/*.c)
 file(GLOB_RECURSE HEADERS front/*.h front/*.hpp)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES} ${HEADERS})
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR} ${CMAKE_SOURCE_DIR})
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR}  ${CMAKE_CURRENT_LIST_DIR}/front/)
 
 # =======================================   Dobby   =======================================
 

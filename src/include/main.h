@@ -1,6 +1,7 @@
 #if !defined(MAIN_CPP_H)
 #define MAIN_CPP_H
 
+#include "HookManager.h"
 #include "Injector/KittyInjector.hpp"
 #include "KittyMemoryMgr.hpp"
 #include "LuaLibrary.h"
@@ -15,7 +16,6 @@
 #include "magic_enum_all.hpp"
 #include "syscalls_enum.h"
 #include "xdl.h"
-
 #include <algorithm>
 #include <android/log.h>
 #include <iostream>

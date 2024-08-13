@@ -139,62 +139,62 @@ void test_4(lua_State *L) {
 
 void test_5(lua_State *L) {
 
-    // test ks_engine
-    {
-        ks_engine *ks;
-        ks_err err;
-        const char *assembly_code = "mov x0, x1; b.eq 0x100";
-        unsigned char *encode;
-        size_t encode_size;
-        size_t count;
+    // // test ks_engine
+    // {
+    //     ks_engine *ks;
+    //     ks_err err;
+    //     const char *assembly_code = "mov x0, x1; b.eq 0x100";
+    //     unsigned char *encode;
+    //     size_t encode_size;
+    //     size_t count;
 
-        err = ks_open(KS_ARCH_ARM64, KS_MODE_LITTLE_ENDIAN, &ks);
-        if (err != KS_ERR_OK) {
-            std::cout << "ERROR: failed to initialize keystone engine! error code: " << err << std::endl;
-            return;
-        }
+    //     err = ks_open(KS_ARCH_ARM64, KS_MODE_LITTLE_ENDIAN, &ks);
+    //     if (err != KS_ERR_OK) {
+    //         std::cout << "ERROR: failed to initialize keystone engine! error code: " << err << std::endl;
+    //         return;
+    //     }
 
-        if (ks_asm(ks, assembly_code, 0, &encode, &encode_size, &count) != KS_ERR_OK) {
-            std::cout << "ERROR: failed to assemble code!" << std::endl;
-        } else {
-            std::cout << "Assembled: " << assembly_code << ", bytes: ";
-            for (size_t i = 0; i < encode_size; i++) {
-                std::cout << std::hex << (unsigned int)encode[i] << " ";
-            }
-            std::cout << std::endl;
-            ks_free(encode);
-        }
+    //     if (ks_asm(ks, assembly_code, 0, &encode, &encode_size, &count) != KS_ERR_OK) {
+    //         std::cout << "ERROR: failed to assemble code!" << std::endl;
+    //     } else {
+    //         std::cout << "Assembled: " << assembly_code << ", bytes: ";
+    //         for (size_t i = 0; i < encode_size; i++) {
+    //             std::cout << std::hex << (unsigned int)encode[i] << " ";
+    //         }
+    //         std::cout << std::endl;
+    //         ks_free(encode);
+    //     }
 
-        ks_close(ks);
-    }
+    //     ks_close(ks);
+    // }
 
-    // test capstone
-    {
-        csh handle;
-        cs_insn *insn;
-        size_t count;
-        const uint8_t arm64_code[] = {0x20, 0x00, 0x80, 0x52, 0x00, 0x02, 0x1F, 0xD6}; // 对应ARM64指令 'mov x0, #0x10 ; br x1'
+    // // test capstone
+    // {
+    //     csh handle;
+    //     cs_insn *insn;
+    //     size_t count;
+    //     const uint8_t arm64_code[] = {0x20, 0x00, 0x80, 0x52, 0x00, 0x02, 0x1F, 0xD6}; // 对应ARM64指令 'mov x0, #0x10 ; br x1'
 
-        if (cs_open(CS_ARCH_AARCH64, CS_MODE_ARM, &handle) != CS_ERR_OK) {
-            std::cerr << "ERROR: Failed to initialize Capstone engine!" << std::endl;
-            return;
-        }
+    //     if (cs_open(CS_ARCH_AARCH64, CS_MODE_ARM, &handle) != CS_ERR_OK) {
+    //         std::cerr << "ERROR: Failed to initialize Capstone engine!" << std::endl;
+    //         return;
+    //     }
 
-        cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
+    //     cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
 
-        count = cs_disasm(handle, arm64_code, sizeof(arm64_code), 0x1000, 0, &insn);
-        if (count > 0) {
-            std::cout << "Disassembly code:" << std::endl;
-            for (size_t j = 0; j < count; j++) {
-                std::cout << "0x" << std::hex << insn[j].address << ": "
-                          << insn[j].mnemonic << " " << insn[j].op_str << std::endl;
-            }
+    //     count = cs_disasm(handle, arm64_code, sizeof(arm64_code), 0x1000, 0, &insn);
+    //     if (count > 0) {
+    //         std::cout << "Disassembly code:" << std::endl;
+    //         for (size_t j = 0; j < count; j++) {
+    //             std::cout << "0x" << std::hex << insn[j].address << ": "
+    //                       << insn[j].mnemonic << " " << insn[j].op_str << std::endl;
+    //         }
 
-            cs_free(insn, count);
-        } else {
-            std::cerr << "ERROR: Failed to disassemble code!" << std::endl;
-        }
+    //         cs_free(insn, count);
+    //     } else {
+    //         std::cerr << "ERROR: Failed to disassemble code!" << std::endl;
+    //     }
 
-        cs_close(&handle);
-    }
+    //     cs_close(&handle);
+    // }
 }

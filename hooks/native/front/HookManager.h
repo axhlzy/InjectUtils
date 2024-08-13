@@ -5,6 +5,8 @@
 #ifndef InjectDemo_HOOK_MANAGER_H
 #define InjectDemo_HOOK_MANAGER_H
 
+#include "HookImpl/HookBase/HookBase.hpp"
+
 #include "HookTemplate.h"
 #include "LambdaTram/LambdaTram.hpp"
 
@@ -12,13 +14,6 @@
 #include "HookImpl/FridaHooker.h"
 // #include "HookImpl/InlineHooker.h"
 #include "HookImpl/ShadowHooker.h"
-
-#include <android/log.h>
-
-#define logd(...) __android_log_print(ANDROID_LOG_DEBUG, TAG, __VA_ARGS__)
-#define loge(...) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__)
-#define logi(...) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
-#define logw(...) __android_log_print(ANDROID_LOG_WARN, TAG, __VA_ARGS__)
 
 enum class HookerType {
     Frida,
@@ -62,7 +57,12 @@ public:
     }
 
     template <typename Callable>
-    static int registerHook(void *mPtr, HookType type, const Callable &func) {
+    static int registerHook(void *mPtr, const Callable &func) {
+        return registerHook(mPtr, defaultHookerType, func);
+    }
+
+    template <typename Callable>
+    static int registerHook(void *mPtr, HookerType type, const Callable &func) {
 
         ++CountHookALL;
         void *bridge;
@@ -82,12 +82,12 @@ public:
         switch (defaultHookerType) {
         case HookerType::Frida:
 #ifdef USE_FRIDA_GUM
-            return FridaHooker::registerHook(mPtr, type, bridge);
+            return FridaHooker::registerHook(mPtr, HookType::HOOK_DEFAULT, bridge);
 #else
             loge("registerHook Frida NOT IMPLEMENTED");
 #endif
         case HookerType::Dobby:
-            return DobbyHooker::registerHook(mPtr, type, bridge);
+            return DobbyHooker::registerHook(mPtr, HookType::HOOK_DEFAULT, bridge);
             // case HookerType::Inline:
             //     return InlineHooker::registerHook(mPtr, type, bridge);
         }
@@ -123,5 +123,7 @@ public:
 
 #define SrcCall(mPtr, ...) HookManager::srcCall(mPtr, __VA_ARGS__)
 #define CallAddress(address, ...) HookManager::CallAddress(address, __VA_ARGS__)
+#define HK(address, func) HookManager::registerHook(address, func)
+#define UHK(mPtr) HookManager::UnRegisterHook(mPtr)
 
 #endif

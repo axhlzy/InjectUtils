@@ -68,7 +68,7 @@ public:
         dobby_dummy_func_t srcCall = nullptr;
 
         switch (type) {
-        case HookType::HOOK_DOBBY:
+        case HookType::HOOK_DEFAULT:
             if (replaceFunc == nullptr)
                 break;
             ADD_HOOK(target, replaceFunc, &srcCall);

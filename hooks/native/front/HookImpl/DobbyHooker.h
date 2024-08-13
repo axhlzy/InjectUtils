@@ -6,6 +6,7 @@
 #define IL2CPPHOOKER_DOBBYHOOKER_H
 
 #include "HookBase/HookBase.hpp"
+#include "HookImpl/HookBase/HookBase.hpp"
 
 class DobbyHooker : public HookBase {
 
@@ -50,7 +51,7 @@ public:
         dobby_dummy_func_t srcCall = nullptr;
 
         switch (type) {
-        case HookType::HOOK_DOBBY:
+        case HookType::HOOK_DEFAULT:
             if (replaceFunc == nullptr)
                 break;
             status = DobbyHook(target, replaceFunc, &srcCall);

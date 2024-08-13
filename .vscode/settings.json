@@ -125,7 +125,10 @@
         "semaphore": "cpp",
         "resumable": "cpp",
         "source_location": "cpp",
-        "ranges": "cpp"
+        "ranges": "cpp",
+        "__functional_03": "cpp",
+        "format": "cpp",
+        "__memory": "cpp"
     },
     "commentTranslate.targetLanguage": "zh-CN",
     "mesonbuild.configureOnOpen": false,

@@ -8,6 +8,7 @@ constexpr int SIZE_OF_STR = 1024;
 #include <signal.h>
 #include <string>
 #include <unistd.h>
+#include <utils.h>
 
 void listThreads(pid_t pid) {
     DIR *dir;
@@ -31,17 +32,26 @@ void listThreads() {
     listThreads(getpid());
 }
 
+void X(PTR data, size_t size = 0x20) {
+    std::string str = fmt::format(" [ {} -> {} | {} ] \n{}", (void *)data, (void *)(data + size), (void *)size, hexdump((const void *)data, size));
+    console->info(str);
+}
+
+void X(PTR data) {
+    X(data, 0x20);
+}
+
 BINDFUNC(global) {
 
     luabridge::getGlobalNamespace(L)
-        .addFunction(
-            "clear", *[]() { system("clear"); })
-        .addFunction(
-            "exit", *[]() { exit(0); })
-        .addFunction(
-            "threadid", *[]() { std::cout << std::this_thread::get_id(); })
-        .addFunction(
-            "ls", *[]() { system("ls"); });
+        .addFunction("clear", []() { system("clear"); })
+        .addFunction("q", []() { exit(0); })
+        .addFunction("exit", []() { exit(0); })
+        .addFunction("x",
+                     luabridge::overload<PTR, size_t>(&X),
+                     luabridge::overload<PTR>(&X))
+        .addFunction("threadid", []() { std::cout << std::this_thread::get_id(); })
+        .addFunction("ls", []() { system("ls"); });
 
     luabridge::getGlobalNamespace(L)
         .addFunction("listThreads",

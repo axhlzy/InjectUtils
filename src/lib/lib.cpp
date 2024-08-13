@@ -37,9 +37,13 @@ void repl(lua_State *L) {
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *vm, void *reserved) {
 
-    if (vm == nullptr && reserved == nullptr) {
+    g_thread = new std::thread([]() {
+        pthread_setname_np(pthread_self(), EXEC_NAME);
+        init_kittyMemMgr();
         startLuaVM();
-    } else {
+    });
+
+    if (vm != nullptr && reserved != nullptr) {
         S_TYPE = START_TYPE::SOCKET;
         logd("------------------- JNI_OnLoad -------------------");
         if (vm->GetEnv((void **)&env, JNI_VERSION_1_6) == JNI_OK) {
@@ -49,13 +53,10 @@ JNI_OnLoad(JavaVM *vm, void *reserved) {
             logd("[*] AttachCurrentThread OK");
         }
         g_jvm = vm;
-
-        g_thread = new std::thread([]() {
-            startLuaVM();
-        });
-        g_thread->detach();
+    } else {
+        if (g_thread->joinable())
+            g_thread->join();
     }
-
     return JNI_VERSION_1_6;
 }
 
@@ -70,8 +71,6 @@ inline void startRepl(lua_State *L) {
 }
 
 void initVM() {
-
-    init_kittyMemMgr();
 
     lua_State *L = luaL_newstate();
 

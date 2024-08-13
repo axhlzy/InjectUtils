@@ -6,7 +6,8 @@
 int main(int argc, char *argv[]) {
     try {
         cxxopts::Options options(argv[0], "Inject-Utils");
-        options.add_options()("h,help", "Print help")("d,debug", "Start in debug mode")("p,pid", "PID or package name", cxxopts::value<std::string>());
+        options.add_options()("h,help", "Print help")("d,debug", "Start in debug mode")("p,pid", "PID or package name",
+                                                                                        cxxopts::value<std::string>());
 
         auto result = options.parse(argc, argv);
 

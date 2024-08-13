@@ -36,7 +36,7 @@ public:
         void *srcCall = nullptr;
 
         switch (type) {
-        case HookType::HOOK_DOBBY:
+        case HookType::HOOK_DEFAULT:
             if (voidPtrFunc == nullptr)
                 break;
             Gum::Interceptor_obtain()->replace(target, voidPtrFunc, nullptr, &srcCall);

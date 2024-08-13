@@ -29,7 +29,7 @@ public:
         void *srcCall = nullptr;
 
         switch (type) {
-        case HookType::HOOK_DOBBY:
+        case HookType::HOOK_DEFAULT:
             if (replaceFunc == nullptr)
                 break;
             shadowhook_hook_func_addr(target, replaceFunc, &srcCall);

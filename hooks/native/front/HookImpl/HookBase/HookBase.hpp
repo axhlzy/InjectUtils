@@ -8,17 +8,10 @@
 // #include "magic_enum.hpp"
 #include <map>
 
-#include <android/log.h>
-
-static const char *TAG = "ZZZ";
-
-#define logd(...) __android_log_print(ANDROID_LOG_DEBUG, TAG, __VA_ARGS__)
-#define loge(...) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__)
-#define logi(...) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
-#define logw(...) __android_log_print(ANDROID_LOG_WARN, TAG, __VA_ARGS__)
-
 #include "front/HookTemplate.h"
 #include "front/InsCheck.h"
+
+#include "HookImpl/HookBase/HookLog.h"
 
 #include "dobby.h"
 #include "gumpp.hpp"
@@ -29,7 +22,7 @@ static const char *TAG = "ZZZ";
 #define MACRO_SHOW_SYMBOL __attribute__((visibility("default")))
 
 enum HookType {
-    HOOK_DOBBY,
+    HOOK_DEFAULT,
     HOOK_RET_NOP_0,
     HOOK_RET_NOP_1,
     HOOK_Unity,
@@ -50,6 +43,7 @@ protected:
     inline static dobby_dummy_func_t function_ret_0 = reinterpret_cast<dobby_dummy_func_t>((void *)(*[]() { return nullptr; }));
     inline static dobby_dummy_func_t function_ret_1 = reinterpret_cast<dobby_dummy_func_t>((void *)(*[]() { return (void *)1; }));
 
+public:
     inline static std::map<void *, void *> voidInfoCache = {};
 };
 #endif // IL2CPPHOOKER_HOOKBASE__H
