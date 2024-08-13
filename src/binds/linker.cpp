@@ -295,15 +295,16 @@ std::string get_soinfo(const soinfo *info, const char *appendStart = "\t") {
             os << appendStart << name << ": " << value.get_value<void *>()
                << " | " << currentType.get_name().to_string() << std::endl;
         }
-        // if (name == "link_map_head") {
-        //     auto link_map_head = st.get_property("preinit_array_count_").get_value(*info).get_value<link_map>();
-        //     for (auto &prop : rttr::type::get(link_map_head).get_properties()) {
-        //         auto name = prop.get_name();
-        //         auto value = rttr::type::get<link_map>().get_property(name).get_value(*info).get_value<void *>();
-        //         os << appendStart << appendStart << name << ": " << value
-        //            << " | " << currentType.get_name().to_string() << std::endl;
-        //     }
-        // }
+        if (name == "link_map_head") {
+            auto link_map_type = rttr::type::get<link_map>();
+            auto link_map_head = value.get_value<link_map>();
+            for (auto &prop_link : link_map_type.get_properties()) {
+                auto name = prop_link.get_name();
+                auto value = link_map_type.get_property(name).get_value(link_map_head).get_value<void *>();
+                os << appendStart << appendStart << name << ":\t" << value
+                   << " | " << currentType.get_name().to_string() << std::endl;
+            }
+        }
         if (name == "strtab_" || name == "symtab_") {
             if (name == "strtab_") {
                 os << appendStart << appendStart
