@@ -1,5 +1,6 @@
 #pragma once
 
+#include "log.h"
 #include <semaphore.h>
 
 class Semaphore {
@@ -13,10 +14,12 @@ public:
     }
 
     void wait() {
+        console->info("!!!SEMAPHORE_WAIT!!!");
         sem_wait(&sem);
     }
 
     void post() {
+        console->info("!!!SEMAPHORE_POST!!!");
         sem_post(&sem);
     }
 

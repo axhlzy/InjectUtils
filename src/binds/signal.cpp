@@ -1,8 +1,8 @@
+#include "Semaphore.hpp"
 #include "bindings.h"
 #include <signal.h>
 #include <utils.h>
-
-#include "Semaphore.hpp"
+#include <vector>
 
 BINDFUNC(signal) {
 

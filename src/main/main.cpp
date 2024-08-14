@@ -1,14 +1,17 @@
 #include "main.h"
 #include "LuaSocket/LuaReplClient.hpp"
 #include "cxxopts.hpp"
+#include "fmt/format.h"
 #include <KittyMemoryEx.hpp>
+#include <stacktrace.h>
 // #include "test.h"
+
+__attribute__((noreturn)) void startReplCommand();
 
 int main(int argc, char *argv[]) {
     try {
         cxxopts::Options options(argv[0], "Inject-Utils");
-        options.add_options()("h,help", "Print help")("d,debug", "Start in debug mode")("p,pid", "PID or package name",
-                                                                                        cxxopts::value<std::string>());
+        options.add_options()("h,help", "Print help")("d,debug", "Start in debug mode")("r,restart", "restart app")("c,clear", "clear app")("s,server", "start server")("p,pid", "PID or package name", cxxopts::value<std::string>());
 
         auto result = options.parse(argc, argv);
 
@@ -23,9 +26,14 @@ int main(int argc, char *argv[]) {
             return 0;
         }
 
+        if (result.count("server")) {
+            startReplCommand();
+            return 0;
+        }
+
         if (result.count("pid")) {
             S_TYPE = START_TYPE::SOCKET;
-            set_selinux_state(false);
+            // set_selinux_state(false);
 
             auto pid_or_package = result["pid"].as<std::string>();
 
@@ -35,10 +43,43 @@ int main(int argc, char *argv[]) {
                 if (std::all_of(pid_or_package.begin(), pid_or_package.end(), ::isdigit)) {
                     pid = std::stoi(pid_or_package);
                     std::cout << "PID provided: " << pid << std::endl;
+                    if (result.count("clear") || result.count("restart")) {
+                        std::cout << "Warning: --clear or --restart options are not supported with PID" << std::endl;
+                    }
                 } else {
+                    const auto pkg_name = pid_or_package;
                     std::cout << "Package name provided: " << pid_or_package << std::endl;
                     pid = KittyMemoryEx::getProcessID(pid_or_package);
                     std::cout << "Retrieved PID for package: " << pid << std::endl;
+
+                    // if (result.count("clear")) {
+                    // std:
+                    //     cout << "Clearing package: " << pkg_name << std::endl;
+                    //     try {
+                    //         system(fmt::format("pm clear {}", pkg_name).c_str());
+                    //         system(fmt::format("monkey -p {} -c android.intent.category.LAUNCHER 1", pkg_name).c_str());
+                    //     } catch (const std::exception &e) {
+                    //         std::cerr << e.what() << '\n';
+                    //     }
+                    //     pid = -1;
+                    // }
+
+                    // if (result.count("restart")) {
+                    //     std::cout << "restarting package: " << pkg_name << std::endl;
+                    //     try {
+                    //         system(fmt::format("am force-stop {}", pkg_name).c_str());
+                    //         system(fmt::format("monkey -p {} -c android.intent.category.LAUNCHER 1", pkg_name).c_str());
+                    //     } catch (const std::exception &e) {
+                    //         std::cerr << e.what() << '\n';
+                    //     }
+                    //     pid = -1;
+                    // }
+
+                    // while (pid > 0) {
+                    //     pid = KittyMemoryEx::getProcessID(pkg_name);
+                    //     std::this_thread::sleep_for(std::chrono::seconds(1));
+                    //     std::cout << "Retrying to retrieve PID..." << std::endl;
+                    // }
                 }
             } catch (const std::exception &e) {
                 std::cerr << "Error parsing PID or package name: " << e.what() << std::endl;
@@ -47,6 +88,7 @@ int main(int argc, char *argv[]) {
 
             if (pid != -1) {
                 if (kill(pid, 0) == 0) {
+                    std::cout << "Process found with PID: " << pid << std::endl;
                     inject(pid);
                 } else {
                     std::cerr << "No process found with PID: " << pid << std::endl;
@@ -68,6 +110,12 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    startReplCommand();
+
+    return 0;
+}
+
+void startReplCommand() {
     // start local lua repl
     if (S_TYPE == START_TYPE::SOCKET) {
 
@@ -88,6 +136,4 @@ int main(int argc, char *argv[]) {
             client.send_message(input);
         }
     }
-
-    return 0;
 }

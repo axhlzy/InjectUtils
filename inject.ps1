@@ -5,9 +5,7 @@ param (
 
 Write-Host "Start $ARG_PKG_NAME" -ForegroundColor Green
 
-# require adb-enhanced <- https://github.com/ashishb/adb-enhanced
-# pip install adb-enhanced
-adbe start $ARG_PKG_NAME
+& adb shell monkey -p $ARG_PKG_NAME -c android.intent.category.LAUNCHER 1
 
 $tt = & adb shell su -c ls
 if ($null -eq $tt) {

@@ -1,11 +1,11 @@
 param (
-    [string]$ApkName="com.tencent.tmgp.dpcq"
+    [string]$pkgName="com.tencent.tmgp.dpcq"
 )
 
-& adb shell am force-stop $ApkName
-& adbe start $ApkName
+& adb shell am force-stop $pkgName
+& adb shell monkey -p $pkgName -c android.intent.category.LAUNCHER 1
 
-$id = & adb shell pidof $ApkName
+$id = & adb shell pidof $pkgName
 
 Write-Host "PID: $id"
 

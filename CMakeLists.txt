@@ -90,6 +90,7 @@ add_custom_command(TARGET ${LIB_NAME} POST_BUILD
     $<TARGET_FILE:${LIB_NAME}>
     ${OUTPUT_DIR}/lib${PROJECT_NAME}.so
 )
+target_compile_definitions(${LIB_NAME} PRIVATE GENLIB)
 
 # gen exec
 file(GLOB EXEC_SRC ${CMAKE_SOURCE_DIR}/src/main/*.cpp)
@@ -111,4 +112,4 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIR})
 target_compile_options(${PROJECT_NAME} PRIVATE -fvisibility=default)
 target_link_options(${PROJECT_NAME} PRIVATE -Wl,-E)
 
-add_subdirectory(patch/cpp)
+# add_subdirectory(patch/cpp)

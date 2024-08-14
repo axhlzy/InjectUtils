@@ -1,3 +1,4 @@
+#include "UnityResolve.hpp"
 #include "bindings.h"
 #include "xdl.h"
 

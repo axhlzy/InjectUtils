@@ -31,10 +31,17 @@ RTTR_REGISTRATION {
         .property("nchain_", &soinfo::nchain_)
         .property("bucket_", &soinfo::bucket_)
         .property("chain_", &soinfo::chain_)
+#if defined(USE_RELA)
         .property("plt_rela_", &soinfo::plt_rela_)
         .property("plt_rela_count_", &soinfo::plt_rela_count_)
         .property("rela_", &soinfo::rela_)
         .property("rela_count_", &soinfo::rela_count_)
+#else
+        .property("plt_rel_", &soinfo::plt_rel_)
+        .property("plt_rel_count_", &soinfo::plt_rel_count_)
+        .property("rel_", &soinfo::rel_)
+        .property("rel_count_", &soinfo::rel_count_)
+#endif
         .property("preinit_array_", &soinfo::preinit_array_)
         .property("preinit_array_count_", &soinfo::preinit_array_count_)
         .property("init_array_", &soinfo::init_array_)
@@ -369,6 +376,8 @@ std::string get_soinfo(PTR info) {
     return get_soinfo((const soinfo *)info);
 }
 
+#include <fstream>
+#include <iostream>
 void show_symtab(const soinfo *si, size_t max_symbols = -1, bool other = false) {
     if (!si || !si->symtab_ || !si->strtab_) {
         std::cerr << "Invalid soinfo pointer or empty symbol/strings tables." << std::endl;
@@ -444,13 +453,17 @@ void waitSoLoad(const char *filterSoName) {
         }
         console->info("soinfo::call_constructors ( soinfo : {} | base: {} | soName: {})",
                       (void *)info, (void *)base, soName.c_str());
-        if (soName == string(filterSoName)) {
+        if (strlen(filterSoName) != 0 && soName == string(filterSoName)) {
             console->error("STOP AT {}", soName);
             console->info("{}", get_soinfo(info));
             SEMAPHORE_WAIT
         }
         SrcCall(addr_call_constructors, info);
     });
+}
+
+void waitSoLoad() {
+    waitSoLoad("");
 }
 
 void test(PTR ptr, PTR info) {
@@ -474,7 +487,9 @@ BINDFUNC(linker) {
                      luabridge::overload<const soinfo *, const char *>(&get_soinfo))
         .addFunction("show_soinfo",
                      luabridge::overload<PTR>(&show_soinfo))
-        .addFunction("wait", &waitSoLoad)
+        .addFunction("wait",
+                     luabridge::overload<>(&waitSoLoad),
+                     luabridge::overload<const char *>(&waitSoLoad))
         .addFunction("show_symtab",
                      luabridge::overload<PTR>(&show_symtab),
                      luabridge::overload<PTR, size_t>(&show_symtab))

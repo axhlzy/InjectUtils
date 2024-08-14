@@ -3,7 +3,6 @@
 
 #include "HookManager.h"
 #include "LuaLibrary.h"
-#include "UnityResolve.hpp"
 #include "bindings.h"
 #include "capstone/capstone.h"
 #include "common_enum.hpp"
@@ -95,7 +94,7 @@ static int SOCKET_PORT = 8024;
 
 extern lua_State *G_LUA;
 
-void reg_crash_handler();
+extern void reg_crash_handler();
 
 INLINE void init_kittyMemMgr();
 
@@ -106,5 +105,7 @@ std::string getStat(pid_t tid);
 void set_selinux_state(bool status = false);
 
 void inject(pid_t pid);
+
+extern "C" void setupAppSignalHandler();
 
 #endif // MAIN_CPP_H

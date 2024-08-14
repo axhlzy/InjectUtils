@@ -47,7 +47,7 @@ push uinjector to /data/local/tmp
 `
 
 `
-adbe start com.xxx.xxx -> start app
+adb shell monkey -p com.xxx.xxx -c android.intent.category.LAUNCHER 1 -> start app
 `
 
 `

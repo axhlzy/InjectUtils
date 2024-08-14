@@ -48,6 +48,7 @@ void reg_crash_handler() {
         sigaction(SIGSEGV, &sa, nullptr);
         longjmp(recover, 1);
     };
+
     sa.sa_sigaction = signal_handler;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_SIGINFO;
@@ -55,7 +56,7 @@ void reg_crash_handler() {
 #endif
 
     if (setjmp(recover) == 0) {
-        logd("[*] Lua VM started\n"); // android_logcat
+        logd("[*] Lua VM started\n");
         // get current sp ptr
         asm volatile("mov %0, sp" : "=r"(sp));
         console->info("Lua VM started | sp: {}", sp);
@@ -85,6 +86,8 @@ string getSelfPath() {
     }
 }
 
+#include <fstream>
+#include <iostream>
 std::string getStat(pid_t tid) {
     std::string path = "/proc/" + std::to_string(tid) + "/stat";
     std::ifstream statFile(path);
@@ -176,18 +179,13 @@ std::chrono::duration<double, std::milli> inj_ms{};
 void inject(pid_t pid) {
     string lib = getSelfPath();
     bool use_memfd = false, hide_maps = false, hide_solist = false, stopped = false;
-
     injected_info_t ret{};
     if (kitInjector.init(pid, EK_MEM_OP_IO)) {
-        console->info("KittyInjector init");
-        if (kitInjector.attach()) {
-            console->info("KittyInjector attach");
-        } else {
+        if (!kitInjector.attach()) {
             console->error("KittyInjector attach failed");
             exit(-1);
         }
-        auto tm_start = std::chrono::high_resolution_clock::now();
-
+        // auto tm_start = std::chrono::high_resolution_clock::now();
         ret = kitInjector.injectLibrary(lib, RTLD_NOW | RTLD_LOCAL, use_memfd, hide_maps, hide_solist,
                                         [&pid, &stopped](injected_info_t &injected) {
                                             if (injected.is_valid() && stopped) {
@@ -197,10 +195,9 @@ void inject(pid_t pid) {
                                             }
                                         });
 
-        inj_ms = std::chrono::high_resolution_clock::now() - tm_start;
-        if (inj_ms.count() > 0)
-            console->info("[*] Injection took {} MS.", inj_ms.count());
-
+        // inj_ms = std::chrono::high_resolution_clock::now() - tm_start;
+        // if (inj_ms.count() > 0)
+        //     console->info("[*] Injection took {} MS.", inj_ms.count());
         kitInjector.detach();
     }
 }

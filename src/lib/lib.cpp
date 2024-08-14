@@ -13,6 +13,7 @@ lua_State *G_LUA = NULL;
 
 #include <LuaSocket/LuaReplServer.hpp>
 void repl_socket(lua_State *L) {
+    logd("[*] start lua repl | Socket Mode | %d", SOCKET_PORT);
     try {
         boost::asio::io_context io_context;
         LuaReplServer server(io_context, SOCKET_PORT, L);
@@ -23,6 +24,7 @@ void repl_socket(lua_State *L) {
 }
 
 void repl(lua_State *L) {
+    logd("[*] start lua repl | Debug Mode");
     std::string input;
     while (true) {
         std::cout << "exec > ";
@@ -39,8 +41,14 @@ void repl(lua_State *L) {
     }
 }
 
+#include "Semaphore.hpp"
+
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *vm, void *reserved) {
+
+    logd("[+] CURRENT -> %d | %s", getpid(), KittyMemoryEx::getProcessName(getpid()).c_str());
+
+    setupAppSignalHandler();
 
     g_thread = new std::thread([]() {
         pthread_setname_np(pthread_self(), EXEC_NAME);
@@ -48,7 +56,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved) {
         startLuaVM();
     });
 
-    if (vm != nullptr && reserved != nullptr) {
+    if (vm != nullptr) {
         S_TYPE = START_TYPE::SOCKET;
         logd("------------------- JNI_OnLoad -------------------");
         if (vm->GetEnv((void **)&env, JNI_VERSION_1_6) == JNI_OK) {
@@ -67,10 +75,8 @@ JNI_OnLoad(JavaVM *vm, void *reserved) {
 
 inline void startRepl(lua_State *L) {
     if (S_TYPE == START_TYPE::DEBUG) {
-        logd("[*] start lua repl } Debug Mode");
         repl(L);
     } else if (S_TYPE == START_TYPE::SOCKET) {
-        logd("[*] start lua repl | Socket Mode");
         repl_socket(L);
     }
 }
@@ -98,3 +104,47 @@ void startLuaVM() {
 
     initVM();
 }
+
+#ifdef GENLIB
+
+__MAIN__ void preInitInject() {
+
+    void *handle = xdl_open("libart.so", XDL_DEFAULT);
+    if (handle == nullptr) {
+        logd("[!] xdl_open libart.so failed");
+        return;
+    }
+    void *addr = xdl_sym(handle, "JNI_GetCreatedJavaVMs", nullptr);
+    if (addr == nullptr) {
+        logd("[!] xdl_sym JNI_GetCreatedJavaVMs failed");
+        return;
+    }
+
+    // logd("[*] %d JNI_GetCreatedJavaVMs -> %p", getpid(), addr);
+
+    xdl_close(handle);
+
+    using JNI_GetCreatedJavaVMs_t = jint (*)(JavaVM **vmBuf, jsize bufLen, jsize *nVMs);
+    auto JNI_GetCreatedJavaVMs = reinterpret_cast<JNI_GetCreatedJavaVMs_t>(addr);
+    JavaVM *vm = nullptr;
+    jsize nVMs = 0;
+    JNI_GetCreatedJavaVMs(&vm, 1, &nVMs);
+    // logd("[*] vm -> %p | nVMs -> %d", vm, nVMs);
+
+    if (vm == nullptr) {
+        return;
+    }
+
+    JNIEnv *env = nullptr;
+    if (vm->GetEnv((void **)&env, JNI_VERSION_1_6) != JNI_OK) {
+        return;
+    }
+
+    if (vm->AttachCurrentThread(&env, nullptr) != JNI_OK) {
+        return;
+    }
+
+    JNI_OnLoad(vm, nullptr);
+}
+
+#endif

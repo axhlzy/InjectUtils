@@ -23,3 +23,6 @@ void dumpMemToFile(const void *start_addr, size_t size, const char *file_name);
 char *addr2name(void *addr);
 std::string hexdump(const void *data, std::size_t size = 0x20);
 #define HEXLOG(ptr, len) logd("%s", hexdump(ptr, len).c_str())
+
+#define SET_MEM_PROTECTION(address) \
+    mprotect((void *)((uintptr_t)(address) & ~(getpagesize() - 1)), getpagesize(), PROT_READ | PROT_WRITE | PROT_EXEC)
