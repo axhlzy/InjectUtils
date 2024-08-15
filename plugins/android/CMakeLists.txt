@@ -96,7 +96,7 @@ target_include_directories(${PROJECT_NAME} INTERFACE ${BIONIC_DIR}/linker)
 target_include_directories(${PROJECT_NAME} INTERFACE ${BIONIC_DIR}/libc)
 target_include_directories(${PROJECT_NAME} INTERFACE ${BIONIC_DIR}/libm)
 
-if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/libraries)
+if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/libraries/${ANDROID_ABI}/)
     execute_process(
         COMMAND powershell.exe -ExecutionPolicy Bypass -File "${CMAKE_CURRENT_SOURCE_DIR}/pull_libart.ps1" "${ANDROID_ABI}"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} 

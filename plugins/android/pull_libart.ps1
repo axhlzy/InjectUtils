@@ -1,12 +1,12 @@
 param (
     [string]$ARCH="arm64-v8a"
 )
+Write-Output $ARCH
 
-$lib = ""
 if ($ARCH -eq "armeabi-v7a") {
-    $lib = "lib"
+    $lib = "/apex/com.android.runtime/lib/libart.so"
 } elseif ($ARCH -eq "arm64-v8a") {
-    $lib = "lib64"
+    $lib = "/apex/com.android.art/lib64/libart.so"
 }
 
 Push-Location $PSScriptRoot
@@ -25,7 +25,7 @@ if (Test-Path $ARCH) {
 
 New-Item -ItemType directory -Name $ARCH
 
-& adb pull "/apex/com.android.art/$lib/libart.so" "$($PSScriptRoot)/libraries/$($ARCH)/"
+& adb pull $lib "${PSScriptRoot}/libraries/${ARCH}/"
 
 Pop-Location
 
