@@ -42,6 +42,7 @@ void setupAppSignalHandler() {
     sa.sa_flags = SA_SIGINFO;
     sa.sa_sigaction = signalHandler;
     sigaction(SIGILL, &sa, NULL);
+    sigaction(SIGSEGV, &sa, NULL);
 }
 
 BINDFUNC(breakpoint) {
@@ -49,5 +50,8 @@ BINDFUNC(breakpoint) {
     luabridge::getGlobalNamespace(L)
         .beginNamespace("bp")
         .addFunction("b", [](PTR address) { XORINS(reinterpret_cast<void *>(address)); })
+        .addFunction("setupAppSignalHandler", setupAppSignalHandler)
         .endNamespace();
+
+    luaL_dostring(L, "bp.setupAppSignalHandler()");
 }

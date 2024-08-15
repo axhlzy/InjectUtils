@@ -14,22 +14,26 @@ void init_kittyMemMgr() {
     }
 }
 
+#include "signal_enum.h"
 void reg_crash_handler() {
 
 #if USE_SIGNAL
     static sighandler_t segfault_handler = *[](int signum) {
-        loge("[-] Caught signal | signum : %d \n", signum);
-        console->error("Caught signal | signum : {}", signum);
+        auto signStr = magic_enum::enum_name((SignalE)signum);
+        loge("[-] Caught signal | signum : %d | %s \n", signum, signStr.data());
+        console->error("Caught signal | signum : {} | {}", signum, signStr);
         signal(SIGSEGV, segfault_handler);
         longjmp(recover, 1);
     };
     signal(SIGSEGV, segfault_handler);
 #else
     static auto signal_handler = [](int signum, siginfo_t *info, void *context) {
-        loge("[-] Caught signal | signum : %d | siginfo_t : %p | context : %p\n", signum, info->si_addr, context);
-        console->error("Caught signal | signum : {} | siginfo_t : {} | context : {}", signum, info->si_addr, context);
+        auto signStr = magic_enum::enum_name<SignalE>((SignalE)signum);
+        loge("[-] Caught signal | signum : %d [ %s ] | siginfo_t : %p | context : %p\n", signum, signStr.data(), info->si_addr, context);
+        console->error("Caught signal | signum : {} [ {} ] | siginfo_t : {} | context : {}", signum, signStr, info->si_addr, context);
         // extract register values
         ucontext_t *ucontext = (ucontext_t *)context;
+
         // fault_address
         loge("[-] fault_address: %p\n", ucontext->uc_mcontext.fault_address);
 #ifdef __aarch64__

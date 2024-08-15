@@ -4,7 +4,11 @@ project(uinjector)
 
 add_definitions(-DEXEC_NAME="${PROJECT_NAME}")
 
-option(USE_FRIDA_GUM "use frida-gum" ON)
+option(USE_FRIDA_GUM "use frida-gum" OFF)
+
+set(ENABLE_ART_LINKER OFF CACHE BOOL "Enable linking with the ART linker")
+
+set(branch "android-12.1.0_r1" CACHE STRING "Android branch used for building")
 
 if (USE_FRIDA_GUM)
     add_definitions(-DUSE_FRIDA_GUM)

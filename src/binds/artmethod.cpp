@@ -2,6 +2,9 @@
 #include "bindings.h"
 
 void showArtMethod(art::ArtMethod *artMethod) {
+
+    // console->info("{}", artMethod->PrettyMethod());
+
     console->info("declaring_class_: {:p}", (void *)(artMethod->declaring_class_.AddressWithoutBarrier()));
     console->info("access_flags_: {:p}", artMethod->access_flags_);
     // console->info("dex_code_item_offset_: {:p}", (void *)artMethod->dex_code_item_offset_);

@@ -45,7 +45,10 @@ public:
                 break;
             } catch (const std::exception &e) {
                 cerr << "Connection error: " << e.what() << endl;
+                static int count = 0;
                 std::this_thread::sleep_for(std::chrono::seconds(1));
+                if (++count > 10)
+                    exit(1);
             }
         }
     }

@@ -48,8 +48,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved) {
 
     logd("[+] CURRENT -> %d | %s", getpid(), KittyMemoryEx::getProcessName(getpid()).c_str());
 
-    setupAppSignalHandler();
-
     g_thread = new std::thread([]() {
         pthread_setname_np(pthread_self(), EXEC_NAME);
         init_kittyMemMgr();
@@ -81,7 +79,11 @@ inline void startRepl(lua_State *L) {
     }
 }
 
+static int countRestartTimes = 0;
+
 void initVM() {
+    if (++countRestartTimes > 3)
+        raise(SIGKILL);
 
     lua_State *L = luaL_newstate();
 
@@ -95,7 +97,7 @@ void initVM() {
 
     // test(L);
 
-    lua_close(L);
+    // lua_close(L);
 }
 
 void startLuaVM() {

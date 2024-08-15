@@ -368,10 +368,6 @@ std::string get_soinfo(const soinfo *info, const char *appendStart = "\t") {
     return os.str();
 }
 
-void show_soinfo(PTR info) {
-    console->info(get_soinfo((const soinfo *)info, ""));
-}
-
 std::string get_soinfo(PTR info) {
     return get_soinfo((const soinfo *)info);
 }
@@ -466,6 +462,64 @@ void waitSoLoad() {
     waitSoLoad("");
 }
 
+pthread_mutex_t mutex_soinfo = PTHREAD_MUTEX_INITIALIZER;
+#include "linker_soinfo.h"
+// __dl__Z17solist_add_soinfoP6soinfo
+void add_soinfo(PTR info) {
+
+    pthread_mutex_lock(&mutex_soinfo);
+    void *linker_handle = xdl_open(LINKERNAME, XDL_DEFAULT);
+    void *solist_add_soinfo_addr = xdl_dsym(linker_handle, "__dl__Z17solist_add_soinfoP6soinfo", NULL);
+    xdl_close(linker_handle);
+
+    console->info("[*] find solist_add_soinfo: {}", solist_add_soinfo_addr);
+    logd("[*] find solist_add_soinfo: %p", solist_add_soinfo_addr);
+
+    using fn_solist_add_soinfo = void (*)(soinfo *);
+    reinterpret_cast<fn_solist_add_soinfo>(solist_add_soinfo_addr)((soinfo *)info);
+
+    console->info("[*] solist_add_soinfo called");
+    logd("[*] solist_add_soinfo called");
+
+    pthread_mutex_unlock(&mutex_soinfo);
+}
+
+// __dl__Z23find_containing_libraryPKv
+void *find_soinfo(const char *soName) {
+
+    void *handle = xdl_open(soName, XDL_DEFAULT);
+    if (handle == nullptr) {
+        console->error("xdl_open({}) failed", soName);
+        return nullptr;
+    }
+
+    xdl_info_t info;
+    if (xdl_info(handle, XDL_DI_DLINFO, &info) == -1) {
+        console->error("xdl_info('{}') failed", soName);
+    }
+
+    auto base = info.dli_fbase;
+    void *linker_handle = xdl_open(LINKERNAME, XDL_DEFAULT);
+    void *find_containing_library_addr = xdl_dsym(linker_handle, "__dl__Z23find_containing_libraryPKv", NULL);
+    using fn_find_containing_library = soinfo *(*)(const void *);
+    soinfo *sinfo = (reinterpret_cast<fn_find_containing_library>(find_containing_library_addr))(base);
+    console->info("[*] soinfo : {} | base: {} | soName: {}", (void *)sinfo, (void *)base, soName);
+    console->info("\tpath : {}", info.dli_fname);
+
+    xdl_close(linker_handle);
+    xdl_close(handle);
+
+    return sinfo;
+}
+
+void show_soinfo(PTR info) {
+    console->info(get_soinfo((const soinfo *)info));
+}
+
+void show_soinfo(const char *soName) {
+    show_soinfo((PTR)find_soinfo(soName));
+}
+
 void test(PTR ptr, PTR info) {
     HK((void *)ptr, [=](void *a, void *b, void *c, void *d) {
         SrcCall((void *)ptr, a, b, c, d);
@@ -486,7 +540,8 @@ BINDFUNC(linker) {
                      luabridge::overload<PTR>(&get_soinfo),
                      luabridge::overload<const soinfo *, const char *>(&get_soinfo))
         .addFunction("show_soinfo",
-                     luabridge::overload<PTR>(&show_soinfo))
+                     luabridge::overload<PTR>(&show_soinfo),
+                     luabridge::overload<const char *>(&show_soinfo))
         .addFunction("wait",
                      luabridge::overload<>(&waitSoLoad),
                      luabridge::overload<const char *>(&waitSoLoad))
@@ -494,5 +549,7 @@ BINDFUNC(linker) {
                      luabridge::overload<PTR>(&show_symtab),
                      luabridge::overload<PTR, size_t>(&show_symtab))
         .addFunction("test", &test)
+        .addFunction("add_soinfo", &add_soinfo)
+        .addFunction("find_soinfo", &find_soinfo)
         .endNamespace();
 }

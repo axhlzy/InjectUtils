@@ -106,6 +106,4 @@ void set_selinux_state(bool status = false);
 
 void inject(pid_t pid);
 
-extern "C" void setupAppSignalHandler();
-
 #endif // MAIN_CPP_H

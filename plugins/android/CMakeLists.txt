@@ -5,7 +5,9 @@ project(fake_art)
 set(CMAKE_CXX_STANDARD 17)
 
 # linker art ?
-option(ENABLE_ART_LINKER "Enable linking with the ART linker" OFF)
+if(NOT DEFINED ENABLE_ART_LINKER)
+    set(ENABLE_ART_LINKER ON CACHE BOOL "Enable linking with the ART linker" FORCE)
+endif()
 
 add_library(${PROJECT_NAME} INTERFACE)
 
@@ -13,7 +15,9 @@ add_subdirectory(work)
 target_link_libraries(${PROJECT_NAME} INTERFACE art_work)
 
 # 这个东西根据自己的手机系统版本去更改
-set(branch "android-12.1.0_r1")
+if(NOT DEFINED branch)
+    set(branch "android-12.1.0_r1" CACHE STRING "Default branch for building" FORCE)
+endif()
 
 # [submodule "ext/art"]
 # 	path = ext/art
