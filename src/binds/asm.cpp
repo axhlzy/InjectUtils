@@ -36,19 +36,16 @@ void keystone_bind(const char *assembly_code, const char *arch) {
 
     if (strlen(arch) != 0) {
         if (strcmp(arch, "arm64") == 0) {
-            KS_CURRENT_ARCH = KS_ARCH_ARM64;
+            KS_CURRENT_ARCH = ks_arch::KS_ARCH_ARM64;
         } else if (strcmp(arch, "arm") == 0) {
-            KS_CURRENT_ARCH = KS_ARCH_ARM;
-        } else if (strcmp(arch, "x86") == 0) {
-            KS_CURRENT_ARCH = KS_ARCH_X86;
-        } else if (strcmp(arch, "x64") == 0) {
-            KS_CURRENT_ARCH = KS_ARCH_X86;
+            KS_CURRENT_ARCH = ks_arch::KS_ARCH_ARM;
         }
+        // else if (strcmp(arch, "x86") == 0) {
+        //     KS_CURRENT_ARCH = ks_arch::KS_ARCH_X86;
+        // } else if (strcmp(arch, "x64") == 0) {
+        //     KS_CURRENT_ARCH = ks_arch::KS_ARCH_X86;
+        // }
     }
-    //     if (cs_open(CS_ARCH_AARCH64, CS_MODE_ARM, &handle) != CS_ERR_OK) {
-    //         std::cerr << "ERROR: Failed to initialize Capstone engine!" << std::endl;
-    //         return;
-    //     }
     err = ks_open(KS_CURRENT_ARCH, KS_CURRENT_MODE, &ks);
     if (err != KS_ERR_OK) {
         console->info("ERROR: failed to initialize keystone engine! error code: {}", err);
@@ -88,7 +85,7 @@ void capstone_bind(PTR arm64_code, size_t size) {
     std::string info;
     if (count > 0) {
         for (size_t j = 0; j < count; j++) {
-            info += fmt::format("\t{}0x{:x}: {} {}\n", j == 0 ? "->" : "",
+            info += fmt::format("\t{}0x{:x}: {} {}\n", j == 0 ? "-> " : "   ",
                                 insn[j].address, insn[j].mnemonic, insn[j].op_str);
         }
         console->info("Disassembled:\n{}", info);

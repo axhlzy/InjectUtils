@@ -16,6 +16,11 @@ void XORINS(void *address) {
     *p ^= (uintptr_t)address;
 }
 
+__attribute__((noinline)) void XORINS(PTR address) {
+    console->info("ADD BP -> {:p}", address);
+    XORINS(reinterpret_cast<void *>(address));
+}
+
 void signalHandler(int sig, siginfo_t *info, void *context) {
     std::lock_guard<std::mutex> lock(mod_vec_mutex);
     auto msg = fmt::format("Caught signal {}, signal code: {}\n",
@@ -28,7 +33,8 @@ void signalHandler(int sig, siginfo_t *info, void *context) {
             *p ^= (uintptr_t)fault_address;
             console->info("STOP AT -> {:p}", fault_address);
             logd("STOP AT -> %p", fault_address);
-            luaL_dostring(G_LUA, fmt::format("asm.cs({})", fault_address).c_str());
+            // luaL_dostring(G_LUA, fmt::format("xdl.xdl_showAddress({:p})", fault_address).c_str());
+            luaL_dostring(G_LUA, fmt::format("asm.cs({:p})", fault_address).c_str());
             showRegs(reinterpret_cast<ucontext_t *>(context));
             SEMAPHORE_WAIT
             return;
@@ -46,17 +52,70 @@ void setupAppSignalHandler() {
     sigaction(SIGILL, &sa, NULL);
 }
 
+void breakWithSymbol(const char *symbol) {
+    lua_getglobal(G_LUA, "sym");
+    lua_getfield(G_LUA, -1, "find");
+    lua_pushstring(G_LUA, symbol);
+
+    if (lua_pcall(G_LUA, 1, 1, 0) != LUA_OK) {
+        console->info("Lua error: {}\n", lua_tostring(G_LUA, -1));
+        lua_pop(G_LUA, 1);
+        return;
+    }
+
+    void *address = lua_touserdata(G_LUA, -1);
+    lua_pop(G_LUA, 1);
+
+    if (!address) {
+        console->info("Symbol not found: {}\n", symbol);
+        return;
+    }
+
+    XORINS((PTR)address);
+}
+
+void breakWithSymbol(const char *mdName, const char *symbol) {
+    lua_getglobal(G_LUA, "sym");
+    lua_getfield(G_LUA, -1, "find");
+    lua_pushstring(G_LUA, mdName);
+    lua_pushstring(G_LUA, symbol);
+
+    if (lua_pcall(G_LUA, 2, 1, 0) != LUA_OK) {
+        console->info("Lua error: {}\n", lua_tostring(G_LUA, -1));
+        lua_pop(G_LUA, 1);
+        return;
+    }
+
+    void *address = lua_touserdata(G_LUA, -1);
+    lua_pop(G_LUA, 1);
+
+    if (!address) {
+        console->info("Symbol not found: {}\n", symbol);
+        return;
+    }
+
+    XORINS((PTR)address);
+}
+
 BINDFUNC(breakpoint) {
 
     luabridge::getGlobalNamespace(L)
         .beginNamespace("bp")
-        .addFunction("b", [](PTR address) { XORINS(reinterpret_cast<void *>(address)); })
+        .addFunction("b",
+                     luabridge::overload<PTR>(XORINS),
+                     luabridge::overload<void *>(XORINS),
+                     luabridge::overload<const char *>(breakWithSymbol),
+                     luabridge::overload<const char *, const char *>(breakWithSymbol))
         .addFunction("setupAppSignalHandler", setupAppSignalHandler)
         .endNamespace();
 
     // alias
     luabridge::getGlobalNamespace(L)
-        .addFunction("b", [](PTR address) { XORINS(reinterpret_cast<void *>(address)); })
+        .addFunction("b",
+                     luabridge::overload<PTR>(XORINS),
+                     luabridge::overload<void *>(XORINS),
+                     luabridge::overload<const char *>(breakWithSymbol),
+                     luabridge::overload<const char *, const char *>(breakWithSymbol))
         .addFunction("setupAppSignalHandler", setupAppSignalHandler);
 
     setupAppSignalHandler();

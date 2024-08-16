@@ -5,7 +5,7 @@ void bind_libs(lua_State *L) {
     xdl_info_t info;
     void *cache = NULL;
     if (!xdl_addr(reinterpret_cast<void *>(bind_libs), &info, &cache))
-        throw std::runtime_error(fmt::format("[*] INIT libs failed @ {}\n", __LINE__));
+        throw std::runtime_error(fmt::format("[*] INIT LIBS FAILED @ {}\n", __LINE__));
 
     static const uintptr_t base = reinterpret_cast<uintptr_t>(info.dli_fbase);
     static const char *strtab = NULL;

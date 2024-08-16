@@ -24,11 +24,11 @@ void showRegs(ucontext_t *ucontext) {
 
 #ifdef __aarch64__
     output = fmt::format(
-        "↓ REGS ↓ \n"
-        "x0: {:#018x} | x1: {:#018x} | x2: {:#018x} | x3: {:#018x} | \n"
-        "x4: {:#018x} | x5: {:#018x} | x6: {:#018x} | x7: {:#018x} | \n"
-        "x8: {:#018x} | x9: {:#018x} | x10: {:#018x} | x11: {:#018x} | \n"
-        "x12: {:#018x} | sp: {:#018x} | lr: {:#018x} | pc: {:#018x} \n",
+        "↓ ARM64 REGS ↓ \n"
+        "x0: {:#020x} | x1: {:#020x} | x2: {:#020x} | x3: {:#020x}\n"
+        "x4: {:#020x} | x5: {:#020x} | x6: {:#020x} | x7: {:#020x}\n"
+        "x8: {:#020x} | x9: {:#020x} | x10: {:#020x} | x11: {:#020x}\n"
+        "x12: {:#020x} | sp: {:#020x} | lr: {:#020x} | pc: {:#020x} \n",
         ctx.regs[0], ctx.regs[1], ctx.regs[2], ctx.regs[3],
         ctx.regs[4], ctx.regs[5], ctx.regs[6], ctx.regs[7],
         ctx.regs[8], ctx.regs[9], ctx.regs[10], ctx.regs[11],
@@ -36,11 +36,11 @@ void showRegs(ucontext_t *ucontext) {
 
 #elif __arm__
     output = fmt::format(
-        "↓ REGS ↓ \n"
-        "r0: {:#018x} | r1: {:#018x} | r2: {:#018x} | r3: {:#018x} | \n"
-        "r4: {:#018x} | r5: {:#018x} | r6: {:#018x} | r7: {:#018x} | \n"
-        "r8: {:#018x} | r9: {:#018x} | r10: {:#018x} | r11: {:#018x} | \n"
-        "r12: {:#018x} | sp: {:#018x} | lr: {:#018x} | pc: {:#018x} \n",
+        "↓ ARM32 REGS ↓ \n"
+        "r0: {:#020x} | r1: {:#020x} | r2: {:#020x} | r3: {:#020x}\n"
+        "r4: {:#020x} | r5: {:#020x} | r6: {:#020x} | r7: {:#020x}\n"
+        "r8: {:#020x} | r9: {:#020x} | r10: {:#020x} | r11: {:#020x}\n"
+        "r12: {:#020x} | sp: {:#020x} | lr: {:#020x} | pc: {:#020x}\n",
         ctx.arm_r0, ctx.arm_r1, ctx.arm_r2, ctx.arm_r3,
         ctx.arm_r4, ctx.arm_r5, ctx.arm_r6, ctx.arm_r7,
         ctx.arm_r8, ctx.arm_r9, ctx.arm_r10, ctx.arm_fp,

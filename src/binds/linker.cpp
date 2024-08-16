@@ -523,6 +523,28 @@ void show_soinfo(const char *soName) {
     show_soinfo((PTR)find_soinfo(soName));
 }
 
+// bypass android namespace
+void load_lib(const char *libName) {
+    const char *caller_lib = "libart.so";
+    void *handle_art = xdl_open("libart.so", XDL_DEFAULT);
+    xdl_info_t info;
+    if (xdl_info(handle_art, XDL_DI_DLINFO, &info) == -1) {
+        console->error("xdl_info( '{}' ) failed", caller_lib);
+    }
+    auto caller_base = info.dli_fbase;
+    xdl_close(handle_art);
+
+    void *linker_handle = xdl_open(LINKERNAME, XDL_DEFAULT);
+    // __dl___loader_dlopen
+    void *loader_dlopen_addr = xdl_dsym(linker_handle, "__dl___loader_dlopen", NULL);
+    xdl_close(linker_handle);
+
+    // void* __loader_dlopen(const char* filename, int flags, const void* caller_addr)
+    using fn_loader_dlopen = void *(*)(const char *, int, void *);
+    void *lib_handle = (reinterpret_cast<fn_loader_dlopen>(loader_dlopen_addr))(libName, RTLD_NOW, caller_base);
+    console->info("[*] lib_handle : {}", lib_handle);
+}
+
 void test(PTR ptr, PTR info) {
     HK((void *)ptr, [=](void *a, void *b, void *c, void *d) {
         SrcCall((void *)ptr, a, b, c, d);
@@ -554,6 +576,7 @@ BINDFUNC(linker) {
         .addFunction("test", &test)
         .addFunction("add_soinfo", &add_soinfo)
         .addFunction("find_soinfo", &find_soinfo)
+        .addFunction("load", &load_lib)
         .endNamespace();
 
     // alias
@@ -575,5 +598,6 @@ BINDFUNC(linker) {
                      luabridge::overload<PTR>(&show_symtab),
                      luabridge::overload<PTR, size_t>(&show_symtab))
         .addFunction("add_soinfo", &add_soinfo)
-        .addFunction("find_soinfo", &find_soinfo);
+        .addFunction("find_soinfo", &find_soinfo)
+        .addFunction("load", &load_lib);
 }

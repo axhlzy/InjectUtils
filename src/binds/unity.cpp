@@ -38,7 +38,7 @@ BINDFUNC(unity) {
         .endClass();
     void *handle_xdl = xdl_open("libil2cpp.so", RTLD_LAZY);
     if (handle_xdl == nullptr)
-        throw std::runtime_error(fmt::format("[*] luabridge bind unity failed @ [ {}:{} ]", __func__, __LINE__));
+        throw std::runtime_error(fmt::format("[*] luabridge bind unity failed @ [ {} ]", __func__));
     static auto unity = new unity_bind();
     luabridge::setGlobal(L, unity, "unity");
 }
