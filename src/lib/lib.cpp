@@ -45,29 +45,33 @@ void repl(lua_State *L) {
 
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *vm, void *reserved) {
+    auto msg = fmt::format("[+] CURRENT -> {} | {}",
+                           (int)getpid(), KittyMemoryEx::getProcessName(getpid()));
+    logd("%s", msg.c_str());
+    std::cout << msg << std::endl;
 
-    logd("[+] CURRENT -> %d | %s", getpid(), KittyMemoryEx::getProcessName(getpid()).c_str());
-
-    g_thread = new std::thread([]() {
+    g_thread = new std::thread([=]() {
+        if (vm != nullptr) {
+            S_TYPE = START_TYPE::SOCKET;
+            logd("------------------- JNI_OnLoad -------------------");
+            if (vm->GetEnv((void **)&env, JNI_VERSION_1_6) == JNI_OK) {
+                logd("[*] GetEnv OK | env:%p | vm:%p", env, vm);
+            }
+            if (vm->AttachCurrentThread(&env, nullptr) == JNI_OK) {
+                logd("[*] AttachCurrentThread OK");
+            }
+            g_jvm = vm;
+        }
         pthread_setname_np(pthread_self(), EXEC_NAME);
         init_kittyMemMgr();
         startLuaVM();
     });
 
-    if (vm != nullptr) {
-        S_TYPE = START_TYPE::SOCKET;
-        logd("------------------- JNI_OnLoad -------------------");
-        if (vm->GetEnv((void **)&env, JNI_VERSION_1_6) == JNI_OK) {
-            logd("[*] GetEnv OK | env:%p | vm:%p", env, vm);
-        }
-        if (vm->AttachCurrentThread(&env, nullptr) == JNI_OK) {
-            logd("[*] AttachCurrentThread OK");
-        }
-        g_jvm = vm;
-    } else {
-        if (g_thread->joinable())
-            g_thread->join();
-    }
+    // if (g_thread->joinable()) {
+    //     g_thread->join();
+    //     luaL_dostring(G_LUA, "bp.setupAppSignalHandler()");
+    // }
+
     return JNI_VERSION_1_6;
 }
 

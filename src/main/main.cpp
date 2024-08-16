@@ -4,9 +4,12 @@
 #include "fmt/format.h"
 #include <KittyMemoryEx.hpp>
 #include <stacktrace.h>
+#include <utils.h>
 // #include "test.h"
 
 __attribute__((noreturn)) void startReplCommand();
+
+#include "Semaphore.hpp"
 
 int main(int argc, char *argv[]) {
     try {

@@ -15,6 +15,7 @@ void init_kittyMemMgr() {
 }
 
 #include "signal_enum.h"
+#include "stacktrace.h"
 void reg_crash_handler() {
 
 #if USE_SIGNAL
@@ -36,6 +37,9 @@ void reg_crash_handler() {
 
         // fault_address
         loge("[-] fault_address: %p\n", ucontext->uc_mcontext.fault_address);
+        console->error("fault_address: {:p}", ucontext->uc_mcontext.fault_address);
+        // UnwindBacktrace();
+
 #ifdef __aarch64__
         loge("[-] x0: %p | x1: %p | x2: %p | x3: %p | x4: %p | x5: %p | x6: %p | x7: %p | x8: %p | x9: %p | x10: %p | x11: %p | x12: %p | sp: %p | lr: %p | pc: %p\n",
              ucontext->uc_mcontext.regs[0], ucontext->uc_mcontext.regs[1], ucontext->uc_mcontext.regs[2], ucontext->uc_mcontext.regs[3],

@@ -4,33 +4,33 @@
 #include <semaphore.h>
 
 class Semaphore {
-public:
+private:
     Semaphore(int initialValue = 0) {
-        sem_init(&sem, 0, initialValue);
+        sem_init(&g_sem, 1, initialValue);
     }
 
     ~Semaphore() {
-        sem_destroy(&sem);
+        sem_destroy(&g_sem);
     }
 
+public:
     void wait() {
         console->info("!!!SEMAPHORE_WAIT!!!");
-        sem_wait(&sem);
+        sem_wait(&g_sem);
     }
 
     void post() {
         console->info("!!!SEMAPHORE_POST!!!");
-        sem_post(&sem);
+        sem_post(&g_sem);
     }
 
     static Semaphore *getGlobal() {
-        static Semaphore instance(0);
+        static Semaphore instance;
         return &instance;
     }
 
 private:
-    sem_t sem;
-
+    inline static sem_t g_sem;
     Semaphore(const Semaphore &) = delete;
     Semaphore &operator=(const Semaphore &) = delete;
     Semaphore(Semaphore &&) = delete;
