@@ -4,6 +4,8 @@
 #include <map>
 #include <vector>
 
+#include "HookManager.h"
+
 using namespace std;
 
 class dobby_bind {

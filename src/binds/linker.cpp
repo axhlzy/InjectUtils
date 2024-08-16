@@ -1,4 +1,5 @@
 #include "bindings.h"
+#include "fmt/core.h"
 #include "linker_soinfo.h"
 #include "xdl_util.h"
 
@@ -6,6 +7,7 @@
 
 #include "rttr/registration"
 #include <sstream>
+#include <string>
 
 using namespace rttr;
 
@@ -218,7 +220,7 @@ void disp_link_map_head() {
     } while (l_next != NULL);
 }
 
-string getExtraInfo(void *ptr) {
+std::string getExtraInfo(void *ptr) {
     char extraInfo[0x100];
     strcpy(extraInfo, " <NULL> ");
     void *cache;
@@ -233,7 +235,7 @@ string getExtraInfo(void *ptr) {
             snprintf(extraInfo, 256, "| %p @ %s", (void *)offset, name);
         }
     }
-    return string(extraInfo);
+    return std::string(extraInfo);
 }
 
 // std::string getExtraInfo(void *ptr) {
@@ -420,6 +422,7 @@ void show_symtab(PTR si, size_t count) {
     show_symtab(reinterpret_cast<const soinfo *>(si), count);
 }
 
+#include "HookManager.h"
 #include "Semaphore.hpp"
 #include "dobby.h"
 #include "utils.h"
@@ -436,7 +439,7 @@ void waitSoLoad(const char *filterSoName) {
 
     HK(addr_call_constructors, [&](const soinfo *info) {
         auto base = info->base;
-        string soName = "";
+        std::string soName = "";
         for (auto dyn = info->dynamic; dyn->d_tag != DT_NULL; ++dyn) {
             if (dyn->d_tag == DT_SONAME) {
                 soName = reinterpret_cast<const char *>(info->strtab_ + dyn->d_un.d_val);
@@ -449,7 +452,7 @@ void waitSoLoad(const char *filterSoName) {
         }
         console->info("soinfo::call_constructors ( soinfo : {} | base: {} | soName: {})",
                       (void *)info, (void *)base, soName.c_str());
-        if (strlen(filterSoName) != 0 && soName == string(filterSoName)) {
+        if (strlen(filterSoName) != 0 && soName == std::string(filterSoName)) {
             console->error("STOP AT {}", soName);
             console->info("{}", get_soinfo(info));
             SEMAPHORE_WAIT
@@ -552,4 +555,25 @@ BINDFUNC(linker) {
         .addFunction("add_soinfo", &add_soinfo)
         .addFunction("find_soinfo", &find_soinfo)
         .endNamespace();
+
+    // alias
+    luabridge::getGlobalNamespace(L)
+        .addFunction("somain", &get_somain)
+        .addFunction("disp_soinfo_link", &disp_soinfo_link)
+        .addFunction("disp_link_map_head", &disp_link_map_head)
+        .addFunction("show_symtab_o", &show_symtab_o)
+        .addFunction("get_soinfo",
+                     luabridge::overload<PTR>(&get_soinfo),
+                     luabridge::overload<const soinfo *, const char *>(&get_soinfo))
+        .addFunction("show_soinfo",
+                     luabridge::overload<PTR>(&show_soinfo),
+                     luabridge::overload<const char *>(&show_soinfo))
+        .addFunction("wait",
+                     luabridge::overload<>(&waitSoLoad),
+                     luabridge::overload<const char *>(&waitSoLoad))
+        .addFunction("show_symtab",
+                     luabridge::overload<PTR>(&show_symtab),
+                     luabridge::overload<PTR, size_t>(&show_symtab))
+        .addFunction("add_soinfo", &add_soinfo)
+        .addFunction("find_soinfo", &find_soinfo);
 }

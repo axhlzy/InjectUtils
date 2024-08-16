@@ -16,6 +16,47 @@ void init_kittyMemMgr() {
 
 #include "signal_enum.h"
 #include "stacktrace.h"
+#include <fmt/core.h>
+
+void showRegs(ucontext_t *ucontext) {
+    auto ctx = ucontext->uc_mcontext;
+    std::string output;
+
+#ifdef __aarch64__
+    output = fmt::format(
+        "↓ REGS ↓ \n"
+        "x0: {:#018x} | x1: {:#018x} | x2: {:#018x} | x3: {:#018x} | \n"
+        "x4: {:#018x} | x5: {:#018x} | x6: {:#018x} | x7: {:#018x} | \n"
+        "x8: {:#018x} | x9: {:#018x} | x10: {:#018x} | x11: {:#018x} | \n"
+        "x12: {:#018x} | sp: {:#018x} | lr: {:#018x} | pc: {:#018x} \n",
+        ctx.regs[0], ctx.regs[1], ctx.regs[2], ctx.regs[3],
+        ctx.regs[4], ctx.regs[5], ctx.regs[6], ctx.regs[7],
+        ctx.regs[8], ctx.regs[9], ctx.regs[10], ctx.regs[11],
+        ctx.regs[12], ctx.sp, ctx.regs[30], ctx.pc);
+
+#elif __arm__
+    output = fmt::format(
+        "↓ REGS ↓ \n"
+        "r0: {:#018x} | r1: {:#018x} | r2: {:#018x} | r3: {:#018x} | \n"
+        "r4: {:#018x} | r5: {:#018x} | r6: {:#018x} | r7: {:#018x} | \n"
+        "r8: {:#018x} | r9: {:#018x} | r10: {:#018x} | r11: {:#018x} | \n"
+        "r12: {:#018x} | sp: {:#018x} | lr: {:#018x} | pc: {:#018x} \n",
+        ctx.arm_r0, ctx.arm_r1, ctx.arm_r2, ctx.arm_r3,
+        ctx.arm_r4, ctx.arm_r5, ctx.arm_r6, ctx.arm_r7,
+        ctx.arm_r8, ctx.arm_r9, ctx.arm_r10, ctx.arm_fp,
+        ctx.arm_ip, ctx.arm_sp, ctx.arm_lr, ctx.arm_pc);
+#endif
+
+    loge("%s", output.c_str());
+    console->info("{}", output);
+}
+
+#define USE_SIGNAL 0
+
+#include <setjmp.h>
+jmp_buf recover;
+void *sp = nullptr;
+struct sigaction sa;
 void reg_crash_handler() {
 
 #if USE_SIGNAL
@@ -30,29 +71,20 @@ void reg_crash_handler() {
 #else
     static auto signal_handler = [](int signum, siginfo_t *info, void *context) {
         auto signStr = magic_enum::enum_name<SignalE>((SignalE)signum);
-        loge("[-] Caught signal | signum : %d [ %s ] | siginfo_t : %p | context : %p\n", signum, signStr.data(), info->si_addr, context);
-        console->error("Caught signal | signum : {} [ {} ] | siginfo_t : {} | context : {}", signum, signStr, info->si_addr, context);
+        auto msg = fmt::format("[-] Caught signal | signum : {} [ {} ] | siginfo_t : {} | context : {}\n", signum, signStr, info->si_addr, context);
+        loge("%s", msg.c_str());
+        console->error("{}", msg);
         // extract register values
-        ucontext_t *ucontext = (ucontext_t *)context;
+        auto ucontext = (ucontext_t *)context;
+        auto ctx = ucontext->uc_mcontext;
 
         // fault_address
-        loge("[-] fault_address: %p\n", ucontext->uc_mcontext.fault_address);
-        console->error("fault_address: {:p}", ucontext->uc_mcontext.fault_address);
+        loge("[-] fault_address: %p\n", ctx.fault_address);
+        console->error("fault_address: {:p}", ctx.fault_address);
         // UnwindBacktrace();
 
-#ifdef __aarch64__
-        loge("[-] x0: %p | x1: %p | x2: %p | x3: %p | x4: %p | x5: %p | x6: %p | x7: %p | x8: %p | x9: %p | x10: %p | x11: %p | x12: %p | sp: %p | lr: %p | pc: %p\n",
-             ucontext->uc_mcontext.regs[0], ucontext->uc_mcontext.regs[1], ucontext->uc_mcontext.regs[2], ucontext->uc_mcontext.regs[3],
-             ucontext->uc_mcontext.regs[4], ucontext->uc_mcontext.regs[5], ucontext->uc_mcontext.regs[6], ucontext->uc_mcontext.regs[7],
-             ucontext->uc_mcontext.regs[8], ucontext->uc_mcontext.regs[9], ucontext->uc_mcontext.regs[10], ucontext->uc_mcontext.regs[11],
-             ucontext->uc_mcontext.regs[12], ucontext->uc_mcontext.sp, ucontext->uc_mcontext.regs[30], ucontext->uc_mcontext.pc);
-#elif __arm__
-        loge("[-] r0: %p | r1: %p | r2: %p | r3: %p | r4: %p | r5: %p | r6: %p | r7: %p | r8: %p | r9: %p | r10: %p | r11: %p | r12: %p | sp: %p | lr: %p | pc: %p\n",
-             ucontext->uc_mcontext.arm_r0, ucontext->uc_mcontext.arm_r1, ucontext->uc_mcontext.arm_r2, ucontext->uc_mcontext.arm_r3,
-             ucontext->uc_mcontext.arm_r4, ucontext->uc_mcontext.arm_r5, ucontext->uc_mcontext.arm_r6, ucontext->uc_mcontext.arm_r7,
-             ucontext->uc_mcontext.arm_r8, ucontext->uc_mcontext.arm_r9, ucontext->uc_mcontext.arm_r10, ucontext->uc_mcontext.arm_fp,
-             ucontext->uc_mcontext.arm_ip, ucontext->uc_mcontext.arm_sp, ucontext->uc_mcontext.arm_lr, ucontext->uc_mcontext.arm_pc);
-#endif
+        showRegs(ucontext);
+
         sigaction(SIGSEGV, &sa, nullptr);
         longjmp(recover, 1);
     };

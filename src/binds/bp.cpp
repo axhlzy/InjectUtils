@@ -7,7 +7,6 @@
 
 std::vector<uintptr_t> g_addr_mod_vec;
 std::mutex mod_vec_mutex;
-sem_t bp_sem;
 
 void XORINS(void *address) {
     std::lock_guard<std::mutex> lock(mod_vec_mutex);
@@ -17,7 +16,7 @@ void XORINS(void *address) {
     *p ^= (uintptr_t)address;
 }
 
-void signalHandler(int sig, siginfo_t *info, void *unused) {
+void signalHandler(int sig, siginfo_t *info, void *context) {
     std::lock_guard<std::mutex> lock(mod_vec_mutex);
     auto msg = fmt::format("Caught signal {}, signal code: {}\n",
                            magic_enum::enum_name((SignalE)sig), info->si_code);
@@ -29,8 +28,9 @@ void signalHandler(int sig, siginfo_t *info, void *unused) {
             *p ^= (uintptr_t)fault_address;
             console->info("STOP AT -> {:p}", fault_address);
             logd("STOP AT -> %p", fault_address);
-            // todo disassemble (fault_address)
-            sem_wait(&bp_sem);
+            luaL_dostring(G_LUA, fmt::format("asm.cs({})", fault_address).c_str());
+            showRegs(reinterpret_cast<ucontext_t *>(context));
+            SEMAPHORE_WAIT
             return;
         }
     }
@@ -44,8 +44,6 @@ void setupAppSignalHandler() {
     sa.sa_flags = SA_SIGINFO;
     sa.sa_sigaction = signalHandler;
     sigaction(SIGILL, &sa, NULL);
-    // sigaction(SIGSEGV, &sa, NULL);
-    sem_init(&bp_sem, 1, 0);
 }
 
 BINDFUNC(breakpoint) {
@@ -53,9 +51,13 @@ BINDFUNC(breakpoint) {
     luabridge::getGlobalNamespace(L)
         .beginNamespace("bp")
         .addFunction("b", [](PTR address) { XORINS(reinterpret_cast<void *>(address)); })
-        .addFunction("c", []() { sem_post(&bp_sem); })
         .addFunction("setupAppSignalHandler", setupAppSignalHandler)
         .endNamespace();
+
+    // alias
+    luabridge::getGlobalNamespace(L)
+        .addFunction("b", [](PTR address) { XORINS(reinterpret_cast<void *>(address)); })
+        .addFunction("setupAppSignalHandler", setupAppSignalHandler);
 
     setupAppSignalHandler();
 }

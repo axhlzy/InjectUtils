@@ -1,14 +1,11 @@
 #if !defined(MAIN_CPP_H)
 #define MAIN_CPP_H
 
-#include "HookManager.h"
 #include "LuaLibrary.h"
 #include "bindings.h"
-#include "capstone/capstone.h"
 #include "common_enum.hpp"
 #include "debugbreak.h"
 #include "dobby.h"
-#include "keystone/keystone.h"
 #include "log.h"
 #include "magic_enum_all.hpp"
 #include "syscalls_enum.h"

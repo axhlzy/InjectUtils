@@ -3,11 +3,29 @@
 #include "capstone/capstone.h"
 #include "keystone/keystone.h"
 
-ks_arch KS_CURRENT_ARCH = KS_ARCH_ARM64;
-ks_mode KS_CURRENT_MODE = KS_MODE_LITTLE_ENDIAN;
-
-cs_arch CS_CURRENT_ARCH = CS_ARCH_ARM64;
-cs_mode CS_CURRENT_MODE = CS_MODE_ARM;
+#if defined(__ARM64__) || defined(__aarch64__)
+auto KS_CURRENT_ARCH = ks_arch::KS_ARCH_ARM64;
+auto CS_CURRENT_ARCH = cs_arch::CS_ARCH_AARCH64;
+auto KS_CURRENT_MODE = ks_mode::KS_MODE_LITTLE_ENDIAN;
+auto CS_CURRENT_MODE = cs_mode::CS_MODE_ARM;
+#elif defined(__ARM__)
+auto KS_CURRENT_ARCH = ks_arch::KS_ARCH_ARM;
+auto CS_CURRENT_ARCH = cs_arch::CS_ARCH_ARM;
+auto KS_CURRENT_MODE = ks_mode::KS_MODE_LITTLE_ENDIAN;
+auto CS_CURRENT_MODE = cs_mode::CS_MODE_ARM;
+// #elif defined(__x86_64__) || defined(_M_X64)
+// auto KS_CURRENT_ARCH = KS_ARCH_X86;
+// auto CS_CURRENT_ARCH = CS_ARCH_X86;
+// auto KS_CURRENT_MODE = KS_MODE_LITTLE_ENDIAN;
+// auto CS_CURRENT_MODE = CS_MODE_64;
+// #elif defined(__i386__) || defined(_M_IX86)
+// auto KS_CURRENT_ARCH = KS_ARCH_X86;
+// auto CS_CURRENT_ARCH = CS_ARCH_X86;
+// auto CS_CURRENT_MODE = KS_MODE_LITTLE_ENDIAN;
+// auto CS_CURRENT_MODE = CS_MODE_32;
+#else
+#error "Unsupported architecture!"
+#endif
 
 void keystone_bind(const char *assembly_code, const char *arch) {
     ks_engine *ks;
@@ -16,30 +34,35 @@ void keystone_bind(const char *assembly_code, const char *arch) {
     size_t encode_size;
     size_t count;
 
-    if (arch == "arm64") {
-        KS_CURRENT_ARCH = KS_ARCH_ARM64;
-    } else if (arch == "arm") {
-        KS_CURRENT_ARCH = KS_ARCH_ARM;
-    } else if (arch == "x86") {
-        KS_CURRENT_ARCH = KS_ARCH_X86;
-    } else if (arch == "x64") {
-        KS_CURRENT_ARCH = KS_ARCH_X86;
+    if (strlen(arch) != 0) {
+        if (strcmp(arch, "arm64") == 0) {
+            KS_CURRENT_ARCH = KS_ARCH_ARM64;
+        } else if (strcmp(arch, "arm") == 0) {
+            KS_CURRENT_ARCH = KS_ARCH_ARM;
+        } else if (strcmp(arch, "x86") == 0) {
+            KS_CURRENT_ARCH = KS_ARCH_X86;
+        } else if (strcmp(arch, "x64") == 0) {
+            KS_CURRENT_ARCH = KS_ARCH_X86;
+        }
     }
-
+    //     if (cs_open(CS_ARCH_AARCH64, CS_MODE_ARM, &handle) != CS_ERR_OK) {
+    //         std::cerr << "ERROR: Failed to initialize Capstone engine!" << std::endl;
+    //         return;
+    //     }
     err = ks_open(KS_CURRENT_ARCH, KS_CURRENT_MODE, &ks);
     if (err != KS_ERR_OK) {
-        std::cout << "ERROR: failed to initialize keystone engine! error code: " << err << std::endl;
+        console->info("ERROR: failed to initialize keystone engine! error code: {}", err);
         return;
     }
 
     if (ks_asm(ks, assembly_code, 0, &encode, &encode_size, &count) != KS_ERR_OK) {
-        std::cout << "ERROR: failed to assemble code!" << std::endl;
+        console->info("ERROR: failed to assemble code!");
     } else {
-        std::cout << "Assembled: " << assembly_code << ", bytes: ";
+        console->info("Assembled: {}, bytes: ", assembly_code);
         for (size_t i = 0; i < encode_size; i++) {
-            std::cout << std::hex << (unsigned int)encode[i] << " ";
+            console->info("{:02x} ", (unsigned int)encode[i]);
         }
-        std::cout << std::endl;
+        console->info("");
         ks_free(encode);
     }
 
@@ -47,7 +70,7 @@ void keystone_bind(const char *assembly_code, const char *arch) {
 }
 
 void keystone_bind(const char *assembly_code) {
-    keystone_bind(assembly_code, "arm64");
+    keystone_bind(assembly_code, "");
 }
 
 void capstone_bind(PTR arm64_code, size_t size) {
@@ -56,22 +79,22 @@ void capstone_bind(PTR arm64_code, size_t size) {
     size_t count;
 
     if (cs_open(CS_CURRENT_ARCH, CS_CURRENT_MODE, &handle) != CS_ERR_OK) {
-        std::cerr << "ERROR: Failed to initialize Capstone engine!" << std::endl;
+        console->info("ERROR: Failed to initialize Capstone engine!");
         return;
     }
 
     cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
     count = cs_disasm(handle, (const uint8_t *)arm64_code, size * 4, (uint64_t)arm64_code, 0, &insn);
+    std::string info;
     if (count > 0) {
-        std::cout << "Disassembly code:" << std::endl;
         for (size_t j = 0; j < count; j++) {
-            std::cout << "0x" << std::hex << insn[j].address << ": "
-                      << insn[j].mnemonic << " " << insn[j].op_str << std::endl;
+            info += fmt::format("\t{}0x{:x}: {} {}\n", j == 0 ? "->" : "",
+                                insn[j].address, insn[j].mnemonic, insn[j].op_str);
         }
-
+        console->info("Disassembled:\n{}", info);
         cs_free(insn, count);
     } else {
-        std::cerr << "ERROR: Failed to disassemble code!" << std::endl;
+        console->info("ERROR: Failed to disassemble code!");
     }
 }
 
@@ -90,7 +113,15 @@ BINDFUNC(asm) {
                      luabridge::overload<PTR, size_t>(&capstone_bind))
         .endNamespace();
 
-    // // test
-    // keystone_bind("mov x0, x1; b.eq 0x100");
-    // capstone_bind((PTR)reg_asm, 20);
+    // alias
+    luabridge::getGlobalNamespace(L)
+        .addFunction("ks",
+                     luabridge::overload<const char *>(&keystone_bind),
+                     luabridge::overload<const char *, const char *>(&keystone_bind))
+        .addFunction("cs",
+                     luabridge::overload<PTR>(&capstone_bind),
+                     luabridge::overload<PTR, size_t>(&capstone_bind))
+        .addFunction("dis",
+                     luabridge::overload<PTR>(&capstone_bind),
+                     luabridge::overload<PTR, size_t>(&capstone_bind));
 }
