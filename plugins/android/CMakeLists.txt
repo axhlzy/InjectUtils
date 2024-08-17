@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 # linker art ?
 if(NOT DEFINED ENABLE_ART_LINKER)
-    set(ENABLE_ART_LINKER ON CACHE BOOL "Enable linking with the ART linker" FORCE)
+    set(ENABLE_ART_LINKER OFF CACHE BOOL "Enable linking with the ART linker" FORCE)
 endif()
 
 add_library(${PROJECT_NAME} INTERFACE)

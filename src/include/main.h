@@ -83,11 +83,12 @@ enum LUA_STATUS {
 
 enum START_TYPE {
     DEBUG,
-    SOCKET
+    SOCKET,
+    UDEFINE
 };
 
-static START_TYPE S_TYPE = DEBUG;
-static int SOCKET_PORT = 8024;
+inline START_TYPE S_TYPE = UDEFINE;
+inline int SOCKET_PORT = 8024;
 
 extern lua_State *G_LUA;
 

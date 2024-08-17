@@ -11,7 +11,9 @@ using std::cout;
 using std::endl;
 using ResponseHandler = std::function<void(const std::string &)>;
 
-constexpr long MAXLEN = 0x1000 * 0x1000 * 2;
+#ifndef LUA_REPL_CLI_MAXLEN
+#define LUA_REPL_CLI_MAXLEN 0x1000 * 0x1000 * 2
+#endif
 
 class LuaReplClient {
 public:
@@ -20,7 +22,7 @@ public:
           server_port_(server_port),
           io_context_(),
           socket_(io_context_),
-          reply_(new char[MAXLEN]) {
+          reply_(new char[LUA_REPL_CLI_MAXLEN]) {
         work_guard = std::make_unique<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>(
             boost::asio::make_work_guard(io_context_));
     }
@@ -68,7 +70,7 @@ public:
 
 private:
     void start_receive() {
-        socket_.async_read_some(boost::asio::buffer(reply_.get(), MAXLEN),
+        socket_.async_read_some(boost::asio::buffer(reply_.get(), LUA_REPL_CLI_MAXLEN),
                                 [this](boost::system::error_code ec, std::size_t length) {
                                     if (!ec) {
                                         cout << std::string(reply_.get(), length) << endl;

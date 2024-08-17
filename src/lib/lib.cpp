@@ -1,17 +1,32 @@
-#include "Injector/KittyInjector.hpp"
-#include "KittyMemoryMgr.hpp"
 
-extern KittyInjector kitInjector;
-extern KittyMemoryMgr kittyMemMgr;
 
-#include <main.h>
+#include "main.h"
+#include <KittyMemoryEx.hpp>
+
 static JavaVM *g_jvm;
 static JNIEnv *env;
 static std::thread *g_thread = NULL;
 
+void serializeToPipe(int pipe_fd, const std::vector<std::string> &data) {
+}
+
+void deserializeFromPipe(int pipe_fd, std::vector<std::string> &data) {
+}
+
 lua_State *G_LUA = NULL;
 
+#include <LuaSocket/LuaReplClient.hpp>
 #include <LuaSocket/LuaReplServer.hpp>
+
+extern int installRepl(const std::vector<std::string> &suggestions, std::function<void(const std::string &)> callback);
+
+std::vector<std::string> getLuaCommands(lua_State *L) {
+    return {"123", "asdf", "0912j39012j390"};
+}
+
+const char *PIPE_NAME = "/data/local/tmp/0912j39012j390";
+
+// run on remote
 void repl_socket(lua_State *L) {
     logd("[*] start lua repl | Socket Mode | %d", SOCKET_PORT);
     try {
@@ -23,36 +38,51 @@ void repl_socket(lua_State *L) {
     }
 }
 
+// run on local
+void start_local_repl() {
+    LuaReplClient client(std::to_string(SOCKET_PORT));
+    client.connect();
+    std::vector<std::string> customSuggestions = {".help", ".exit", "exampleCommand"};
+    installRepl(customSuggestions, [&](const std::string &input) {
+        if (input == "exit" || input == "q") {
+            client.close_connect();
+        } else {
+            client.send_message(input);
+        }
+    });
+}
+
 void repl(lua_State *L) {
     logd("[*] start lua repl | Debug Mode");
-    std::string input;
-    while (true) {
-        std::cout << "exec > ";
-        if (std::getline(std::cin, input) && (input == "exit" || input == "q"))
-            break;
+    std::vector<std::string> customSuggestions = {".help", ".exit", "exampleCommand"};
+    installRepl(customSuggestions, [&](const std::string &input) {
+        if (input == "exit" || input == "q")
+            exit(0);
         if (input.empty())
-            continue;
+            return;
         int status = luaL_dostring(L, input.c_str());
         if (reinterpret_cast<LUA_STATUS &>(status) != LUA_STATUS::LUA_OK_) {
             const char *msg = lua_tostring(L, -1);
             lua_writestringerror("%s\n", msg);
             lua_pop(L, 1);
         }
-    }
+    });
 }
-
-#include "Semaphore.hpp"
 
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *vm, void *reserved) {
-    auto msg = fmt::format("[+] CURRENT -> {} | {}",
-                           (int)getpid(), KittyMemoryEx::getProcessName(getpid()));
+
+    S_TYPE = vm == nullptr ? START_TYPE::DEBUG : START_TYPE::SOCKET;
+
+    std::string msg = fmt::format("[+] CURRENT -> {} | {} | {}",
+                                  (int)getpid(),
+                                  KittyMemoryEx::getProcessName(getpid()),
+                                  magic_enum::enum_name(S_TYPE));
     logd("%s", msg.c_str());
     std::cout << msg << std::endl;
 
     g_thread = new std::thread([=]() {
         if (vm != nullptr) {
-            S_TYPE = START_TYPE::SOCKET;
             logd("------------------- JNI_OnLoad -------------------");
             if (vm->GetEnv((void **)&env, JNI_VERSION_1_6) == JNI_OK) {
                 logd("[*] GetEnv OK | env:%p | vm:%p", env, vm);
@@ -63,14 +93,12 @@ JNI_OnLoad(JavaVM *vm, void *reserved) {
             g_jvm = vm;
         }
         pthread_setname_np(pthread_self(), EXEC_NAME);
-        init_kittyMemMgr();
         startLuaVM();
     });
 
-    // if (g_thread->joinable()) {
-    //     g_thread->join();
-    //     luaL_dostring(G_LUA, "bp.setupAppSignalHandler()");
-    // }
+    if (S_TYPE == START_TYPE::DEBUG && g_thread->joinable()) {
+        g_thread->join();
+    }
 
     return JNI_VERSION_1_6;
 }

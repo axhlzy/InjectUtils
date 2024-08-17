@@ -12,6 +12,11 @@ add_library(${PROJECT_NAME} INTERFACE)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/fmt)
 target_link_libraries(${PROJECT_NAME} INTERFACE fmt)
 
+# replxx
+set(REPLXX_DIR ${CMAKE_CURRENT_SOURCE_DIR}/replxx)
+target_include_directories(${PROJECT_NAME} INTERFACE ${REPLXX_DIR}/include)
+target_link_libraries(${PROJECT_NAME} INTERFACE ${REPLXX_DIR}/prebuilt/${ANDROID_ABI}/libreplxx.a)
+
 # magic_enum
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/magic_enum)
 target_link_libraries(${PROJECT_NAME} INTERFACE magic_enum)

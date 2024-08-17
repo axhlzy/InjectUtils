@@ -10,7 +10,9 @@
 
 using boost::asio::ip::tcp;
 
-constexpr long MAXLEN = 0x1000;
+#ifndef LUA_REPL_SER_MAXLEN
+#define LUA_REPL_SER_MAXLEN 0x1000
+#endif
 
 class LuaReplServer {
 public:
@@ -44,7 +46,7 @@ private:
     void handle_client(tcp::socket client_socket, lua_State *L, int clientSocket) {
         try {
             boost::system::error_code error;
-            char buffer[MAXLEN];
+            char buffer[LUA_REPL_SER_MAXLEN];
             while (true) {
                 std::memset(buffer, 0, sizeof(buffer));
                 size_t len = client_socket.read_some(boost::asio::buffer(buffer), error);
