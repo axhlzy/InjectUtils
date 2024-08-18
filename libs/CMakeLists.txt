@@ -89,3 +89,8 @@ target_link_libraries(${PROJECT_NAME} INTERFACE boost_1_78_0)
 set(LIB_NETWORK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/network)
 add_subdirectory(${LIB_NETWORK_DIR})
 target_link_libraries(${PROJECT_NAME} INTERFACE libs_network)
+
+# lib_crc
+set(LIB_NETWORK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/crc)
+add_subdirectory(${LIB_NETWORK_DIR})
+target_link_libraries(${PROJECT_NAME} INTERFACE lib_crc)
