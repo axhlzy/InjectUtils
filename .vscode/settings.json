@@ -129,7 +129,8 @@
         "__functional_03": "cpp",
         "format": "cpp",
         "__memory": "cpp",
-        "memory_resource": "cpp"
+        "memory_resource": "cpp",
+        "expected": "cpp"
     },
     "commentTranslate.targetLanguage": "zh-CN",
     "mesonbuild.configureOnOpen": false,

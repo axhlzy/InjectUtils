@@ -4,7 +4,6 @@
 #include <KittyMemoryEx.hpp>
 #include <stacktrace.h>
 #include <utils.h>
-// #include "test.h"
 
 extern void start_local_repl();
 

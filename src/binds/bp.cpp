@@ -40,7 +40,7 @@ void signalHandler(int sig, siginfo_t *info, void *context) {
             return;
         }
     }
-    signal(sig, SIG_DFL);
+    // signal(sig, SIG_DFL);
     raise(sig);
 }
 
