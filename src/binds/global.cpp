@@ -41,6 +41,16 @@ void X(PTR data) {
     X(data, 0x20);
 }
 
+void writeMem(PTR destination, uintptr_t sourceAddressValue) {
+    std::cout << "Writing memory address value " << sourceAddressValue << " to " << (void *)destination << std::endl;
+    *reinterpret_cast<uintptr_t *>(destination) = sourceAddressValue;
+}
+
+void writeMem(PTR ptr, const char *data) {
+    std::cout << "Writing string to memory address " << (void *)ptr << std::endl;
+    std::strcpy((char *const)ptr, data);
+}
+
 BINDFUNC(global) {
 
     luabridge::getGlobalNamespace(L)
@@ -48,9 +58,11 @@ BINDFUNC(global) {
         .addFunction("q", []() { exit(0); })
         .addFunction("exit", []() { exit(0); })
         .addFunction("x",
-                     luabridge::overload<PTR, size_t>(&X),
-                     luabridge::overload<PTR>(&X))
-        .addFunction("threadid", []() { std::cout << std::this_thread::get_id(); })
+                     luabridge::overload<PTR, size_t>(X),
+                     luabridge::overload<PTR>(X))
+        .addFunction("w",
+                     luabridge::overload<PTR, const char *>(writeMem),
+                     luabridge::overload<PTR, uintptr_t>(writeMem))
         .addFunction("ls", []() { system("ls"); });
 
     luabridge::getGlobalNamespace(L)

@@ -62,6 +62,9 @@ list(APPEND LINK_LIBS lua_vm)
 add_subdirectory(libs)
 list(APPEND LINK_LIBS libs)
 
+add_subdirectory(tools)
+list(APPEND LINK_LIBS tools)
+
 add_subdirectory(hooks)
 list(APPEND LINK_LIBS hook_lib)
 

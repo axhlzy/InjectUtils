@@ -428,16 +428,20 @@ void show_symtab(PTR si, size_t count) {
 #include "utils.h"
 #include <stdexcept>
 
+#define CALL_CONSTRUCTOR_NAME "__dl__ZN6soinfo17call_constructorsEv"
+
 void waitSoLoad(const char *filterSoName) {
 
-    static void *addr_call_constructors = DobbySymbolResolver(LINKERNAME, "__dl__ZN6soinfo17call_constructorsEv");
+    void *addr_call_constructors = DobbySymbolResolver(LINKERNAME, CALL_CONSTRUCTOR_NAME);
 
     if (addr_call_constructors == nullptr)
-        throw std::runtime_error("Do not found `__dl__ZN6soinfo17call_constructorsEv`");
+        throw std::runtime_error(fmt::format("Do not found `{}`", CALL_CONSTRUCTOR_NAME));
 
     static std::map<std::string, int> map = {};
 
-    HK(addr_call_constructors, [&](const soinfo *info) {
+    string filterSoNameStr = filterSoName;
+
+    HK(addr_call_constructors, [=](const soinfo *info) {
         auto base = info->base;
         std::string soName = "";
         for (auto dyn = info->dynamic; dyn->d_tag != DT_NULL; ++dyn) {
@@ -452,7 +456,11 @@ void waitSoLoad(const char *filterSoName) {
         }
         console->info("soinfo::call_constructors ( soinfo : {} | base: {} | soName: {})",
                       (void *)info, (void *)base, soName.c_str());
-        if (strlen(filterSoName) != 0 && soName == std::string(filterSoName)) {
+        if (filterSoNameStr.length() != 0 && soName == filterSoNameStr) {
+            console->error("STOP AT {}", soName);
+            console->info("{}", get_soinfo(info));
+            SEMAPHORE_WAIT
+        } else if (filterSoNameStr.length() == 0) {
             console->error("STOP AT {}", soName);
             console->info("{}", get_soinfo(info));
             SEMAPHORE_WAIT

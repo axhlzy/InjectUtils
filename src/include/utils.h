@@ -18,5 +18,11 @@ void showRegs(ucontext_t *ucontext);
 
 void caps_ins(void *ptr);
 
-#define SET_MEM_PROTECTION(address) \
-    mprotect((void *)((uintptr_t)(address) & ~(getpagesize() - 1)), getpagesize(), PROT_READ | PROT_WRITE | PROT_EXEC)
+#define SET_MEM_PROTECTION(address, protection) \
+    mprotect((void *)((uintptr_t)(address) & ~(getpagesize() - 1)), getpagesize(), protection)
+
+#define SET_MEM_PROTECTION_RWX(address) \
+    SET_MEM_PROTECTION(address, PROT_READ | PROT_WRITE | PROT_EXEC)
+
+#define SET_MEM_PROTECTION___(address) \
+    SET_MEM_PROTECTION(address, 0)

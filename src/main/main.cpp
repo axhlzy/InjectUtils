@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
 
             auto pid_or_package = result["pid"].as<std::string>();
 
-            pid_t pid = -1;
+            pid_t pid = 0;
 
             try {
                 if (std::all_of(pid_or_package.begin(), pid_or_package.end(), ::isdigit)) {
@@ -47,15 +47,18 @@ int main(int argc, char *argv[]) {
                     const auto pkg_name = pid_or_package;
                     std::cout << "Package name provided: " << pid_or_package << std::endl;
                     pid = KittyMemoryEx::getProcessID(pid_or_package);
+                    if (pid == 0) {
+                        throw std::runtime_error(fmt::format("Failed to get PID for package: {}", pkg_name));
+                    }
                     std::cout << "Retrieved PID for package: " << pid << std::endl;
                 }
             } catch (const std::exception &e) {
-                std::cerr << "Error parsing PID or package name: " << e.what() << std::endl;
+                std::cerr << e.what() << std::endl;
                 return 1;
             }
 
-            if (pid != -1) {
-                if (kill(pid, 0) == 0) {
+            if (pid != 0) {
+                if (kill(pid, SIG_BLOCK) == 0) {
                     std::cout << "Process found with PID: " << pid << std::endl;
                     inject(pid);
                     start_local_repl();
@@ -67,9 +70,7 @@ int main(int argc, char *argv[]) {
                 std::cerr << "Failed to get PID for the given input." << std::endl;
                 return 1;
             }
-        }
-
-        else {
+        } else {
             std::cout << options.help() << std::endl;
             return 1;
         }

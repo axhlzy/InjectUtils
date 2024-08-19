@@ -3,17 +3,11 @@
 #include "main.h"
 #include <KittyMemoryEx.hpp>
 
-static JavaVM *g_jvm;
-static JNIEnv *env;
-static std::thread *g_thread = NULL;
-
 void serializeToPipe(int pipe_fd, const std::vector<std::string> &data) {
 }
 
 void deserializeFromPipe(int pipe_fd, std::vector<std::string> &data) {
 }
-
-lua_State *G_LUA = NULL;
 
 #include <LuaSocket/LuaReplClient.hpp>
 #include <LuaSocket/LuaReplServer.hpp>
@@ -69,6 +63,23 @@ void repl(lua_State *L) {
     });
 }
 
+auto getApp(JNIEnv *env) -> jobject {
+    jclass activityThreadClass = env->FindClass("android/app/ActivityThread");
+    if (activityThreadClass == nullptr) {
+        return nullptr;
+    }
+    jmethodID currentApplicationMethod = env->GetStaticMethodID(activityThreadClass, "currentApplication", "()Landroid/app/Application;");
+    if (currentApplicationMethod == nullptr) {
+        return nullptr;
+    }
+    jobject application = env->CallStaticObjectMethod(activityThreadClass, currentApplicationMethod);
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        return nullptr;
+    }
+    return application;
+};
+
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *vm, void *reserved) {
 
@@ -83,17 +94,19 @@ JNI_OnLoad(JavaVM *vm, void *reserved) {
 
     g_thread = new std::thread([=]() {
         if (vm != nullptr) {
-            logd("------------------- JNI_OnLoad -------------------");
-            if (vm->GetEnv((void **)&env, JNI_VERSION_1_6) == JNI_OK) {
-                logd("[*] GetEnv OK | env:%p | vm:%p", env, vm);
-            }
-            if (vm->AttachCurrentThread(&env, nullptr) == JNI_OK) {
-                logd("[*] AttachCurrentThread OK");
-            }
             g_jvm = vm;
+            logd("------------------- JNI_OnLoad -------------------");
+            if (vm->AttachCurrentThread(&g_env, nullptr) == JNI_OK) {
+                logd("[*] AttachCurrentThread OK");
+            };
+            if (vm->GetEnv((void **)&g_env, JNI_VERSION_1_6) == JNI_OK) {
+                logd("[*] GetEnv OK | env:%p | vm:%p", g_env, vm);
+            }
+            g_application = getApp(g_env);
         }
         pthread_setname_np(pthread_self(), EXEC_NAME);
         startLuaVM();
+        vm->DetachCurrentThread();
     });
 
     if (S_TYPE == START_TYPE::DEBUG && g_thread->joinable()) {
@@ -103,6 +116,7 @@ JNI_OnLoad(JavaVM *vm, void *reserved) {
     return JNI_VERSION_1_6;
 }
 
+// noreturn
 inline void startRepl(lua_State *L) {
     if (S_TYPE == START_TYPE::DEBUG) {
         repl(L);
@@ -129,7 +143,7 @@ void initVM() {
 
     // test(L);
 
-    // lua_close(L);
+    lua_close(L);
 }
 
 void startLuaVM() {
@@ -166,15 +180,7 @@ __MAIN__ void preInitInject() {
     // logd("[*] vm -> %p | nVMs -> %d", vm, nVMs);
 
     if (vm == nullptr) {
-        return;
-    }
-
-    JNIEnv *env = nullptr;
-    if (vm->GetEnv((void **)&env, JNI_VERSION_1_6) != JNI_OK) {
-        return;
-    }
-
-    if (vm->AttachCurrentThread(&env, nullptr) != JNI_OK) {
+        logd("[!] JNI_GetCreatedJavaVMs failed");
         return;
     }
 

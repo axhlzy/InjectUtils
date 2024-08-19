@@ -53,15 +53,16 @@ private:
                 if (error == boost::asio::error::eof) {
                     std::cout << "[*] Client disconnected." << std::endl;
                     logd("[*] Client disconnected.");
-                    pthread_exit(0); // 直接退出
                     break;
                 } else if (error) {
                     throw boost::system::system_error(error);
                 }
 
                 std::string input(buffer, len);
-                if (input == "exit" || input == "q") {
-                    boost::asio::write(client_socket, boost::asio::buffer("Client requested exit."), error);
+                if (input == "exit" || input == "q" || input == "quit" || input == "quitLua") {
+                    boost::asio::write(client_socket, boost::asio::buffer("Server requested exit."), error);
+                    client_socket.close();
+                    lua_close(L);
                     break;
                 }
 

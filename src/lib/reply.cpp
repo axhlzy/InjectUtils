@@ -569,16 +569,16 @@ int installRepl(const std::vector<std::string> &suggestions, std::function<void(
         std::string input{cinput};
 
         if (input.empty()) {
-            // user hit enter on an empty line
-
             continue;
-
         } else if (input.compare(0, 5, ".quit") == 0 || input.compare(0, 5, ".exit") == 0) {
             // exit the repl
-
             rx.history_add(input);
             break;
-
+        } else if (input.compare(0, 4, "quit") == 0 || input.compare(0, 4, "exit") == 0 || input.compare(0, 1, "q") == 0 || input.compare(0, 7, "quitLua") == 0) {
+            // exit server
+            rx.history_add(input);
+            callback(input);
+            break;
         } else if (input.compare(0, 5, ".help") == 0) {
             // display the help output
             std::cout

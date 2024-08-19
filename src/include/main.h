@@ -90,7 +90,12 @@ enum START_TYPE {
 inline START_TYPE S_TYPE = UDEFINE;
 inline int SOCKET_PORT = 8024;
 
-extern lua_State *G_LUA;
+inline JavaVM *g_jvm;
+inline JNIEnv *g_env;
+inline std::thread *g_thread = NULL;
+inline jobject g_application;
+
+inline lua_State *G_LUA;
 
 extern void reg_crash_handler();
 

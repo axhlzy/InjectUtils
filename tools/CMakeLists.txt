@@ -1,0 +1,24 @@
+cmake_minimum_required(VERSION 3.5)
+
+project(tools)
+
+set(CMAKE_CXX_STANDARD 17)
+
+add_library(${PROJECT_NAME} INTERFACE)
+
+set(HEADER_DIRS)
+set(SOURCE_FILES)
+
+# Crash
+file(GLOB_RECURSE Crash_SOURCES ${CMAKE_CURRENT_LIST_DIR}/Crash/*.cpp ${CMAKE_CURRENT_LIST_DIR}/Crash/*.c)
+list(APPEND SOURCE_FILES ${Crash_SOURCES})
+list(APPEND HEADER_DIRS ${CMAKE_CURRENT_LIST_DIR}/Crash)
+
+# Syscall
+file(GLOB_RECURSE Syscall_SOURCES ${CMAKE_CURRENT_LIST_DIR}/Syscall/*.cpp ${CMAKE_CURRENT_LIST_DIR}/Syscall/*.c)
+list(APPEND SOURCE_FILES ${Syscall_SOURCES})
+list(APPEND HEADER_DIRS ${CMAKE_CURRENT_LIST_DIR}/Syscall)
+list(APPEND HEADER_DIRS ${CMAKE_CURRENT_LIST_DIR}/Syscall/arch/${ANDROID_ABI}/)
+
+target_sources(${PROJECT_NAME} INTERFACE ${SOURCE_FILES})
+target_include_directories(${PROJECT_NAME} INTERFACE ${HEADER_DIRS})

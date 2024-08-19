@@ -130,9 +130,16 @@
         "format": "cpp",
         "__memory": "cpp",
         "memory_resource": "cpp",
-        "expected": "cpp"
+        "expected": "cpp",
+        "climits": "cpp",
+        "stat.h": "c",
+        "syscall.h": "c",
+        "msyscall.h": "c",
+        "types.h": "c",
+        "syscall_arch.h": "c"
     },
     "commentTranslate.targetLanguage": "zh-CN",
     "mesonbuild.configureOnOpen": false,
+    "C_Cpp.errorSquiggles": "disabled",
     // "C_Cpp.errorSquiggles": "disabled",
 }
