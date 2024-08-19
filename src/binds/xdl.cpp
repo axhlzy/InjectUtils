@@ -156,7 +156,7 @@ const char *XdlInfoToString(xdl_info_t *info) {
     return os.str().c_str();
 }
 
-void xdl_showAddress(void *address) {
+void xdl_showAddress___(void *address) {
     xdl_info_t info;
     void *cache;
     if (!xdl_addr(reinterpret_cast<void *>(address), &info, &cache)) {
@@ -170,6 +170,13 @@ void xdl_showAddress(void *address) {
         info.dli_sname, address, off
         // info.dli_fbase, info.dli_fname
     );
+}
+
+void xdl_showAddress(void *address) {
+    Dl_info info;
+    if (dladdr(address, &info)) {
+        console->warn("\t-> {} {} {} {}", info.dli_fbase, info.dli_fname, info.dli_saddr, info.dli_sname);
+    }
 }
 
 void xdl_showAddress(PTR address) {

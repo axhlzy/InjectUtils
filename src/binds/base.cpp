@@ -59,11 +59,28 @@ void findsyms(const char *mdName, const char *symName) {
     }
 }
 
+std::string demangleName(const std::string &mangled_name) {
+    int status;
+    char *demangled = abi::__cxa_demangle(mangled_name.c_str(), nullptr, nullptr, &status);
+
+    std::string result; // 用于储存和返回结果
+    if (status == 0 && demangled) {
+        result = demangled; // 如果解码成功，复制结果到字符串
+    } else {
+        result = "Failed to demangle name"; // 解码失败，返回错误信息
+    }
+
+    std::free(demangled); // 释放由__cxa_demangle分配的内存
+
+    return result;
+}
+
 BINDFUNC(base) {
     // .addFunction("xdl_sym",
     //              luabridge::overload<PTR, const char *>(&xdl_bind::_xdl_sym),
     //              luabridge::overload<PTR, const char *, ElfW(Sym) *>(&xdl_bind::_xdl_sym))
     luabridge::getGlobalNamespace(L)
+        .addFunction("demangleName", demangleName)
         .addFunction("syms", luabridge::overload<const char *>(&iterSyms))
         .addFunction("syms", luabridge::overload<>(*[]() { iterSyms("libil2cpp.so"); }))
         .addFunction("findsyms", luabridge::overload<const char *, const char *>(&findsyms));
