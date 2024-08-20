@@ -1,7 +1,7 @@
-
-
 #include "main.h"
 #include <KittyMemoryEx.hpp>
+
+const char *PIPE_NAME = "/data/local/tmp/xxxx123123";
 
 void serializeToPipe(int pipe_fd, const std::vector<std::string> &data) {
 }
@@ -14,11 +14,22 @@ void deserializeFromPipe(int pipe_fd, std::vector<std::string> &data) {
 
 extern int installRepl(const std::vector<std::string> &suggestions, std::function<void(const std::string &)> callback);
 
-std::vector<std::string> getLuaCommands(lua_State *L) {
-    return {"123", "asdf", "0912j39012j390"};
+std::vector<std::string> getLuaCommands(lua_State *L = G_LUA) {
+    std::vector<std::string> functionNames;
+    lua_pushglobaltable(L);
+    lua_pushnil(L);
+    while (lua_next(L, -2) != 0) {
+        if (lua_isfunction(L, -1)) {
+            const char *name = lua_tostring(L, -2);
+            functions.push_back(name);
+        } else if (lua_istable(L, -2) != 0) {
+            // ...
+        }
+        lua_pop(L, 1);
+    }
+    lua_pop(L, 1);
+    return functionNames;
 }
-
-const char *PIPE_NAME = "/data/local/tmp/0912j39012j390";
 
 // run on remote
 void repl_socket(lua_State *L) {
@@ -36,8 +47,7 @@ void repl_socket(lua_State *L) {
 void start_local_repl() {
     LuaReplClient client(std::to_string(SOCKET_PORT));
     client.connect();
-    std::vector<std::string> customSuggestions = {".help", ".exit", "exampleCommand"};
-    installRepl(customSuggestions, [&](const std::string &input) {
+    installRepl(getLuaCommands(), [&](const std::string &input) {
         if (input == "exit" || input == "q") {
             client.close_connect();
         } else {
@@ -48,8 +58,7 @@ void start_local_repl() {
 
 void repl(lua_State *L) {
     logd("[*] start lua repl | Debug Mode");
-    std::vector<std::string> customSuggestions = {".help", ".exit", "exampleCommand"};
-    installRepl(customSuggestions, [&](const std::string &input) {
+    installRepl(getLuaCommands(L), [&](const std::string &input) {
         if (input == "exit" || input == "q")
             exit(0);
         if (input.empty())
