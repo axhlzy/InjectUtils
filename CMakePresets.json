@@ -20,7 +20,7 @@
           "CMAKE_SYSTEM_VERSION": "24",
           "CMAKE_SYSTEM_NAME": "Android",
           "CMAKE_TOOLCHAIN_FILE": "${env.NDK_HOME}/build/cmake/android.toolchain.cmake",
-          "CMAKE_BUILD_TYPE": "Debug"
+          "CMAKE_BUILD_TYPE": "Release"
         }
       },
       {

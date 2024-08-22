@@ -31,6 +31,8 @@ else()
     set(ARCH "unknown")
 endif()
 
+# add_subdirectory(shell)
+
 set(OUTPUT_DIR ${PREBUILT_DIR}/${ARCH})
 file(MAKE_DIRECTORY ${OUTPUT_DIR})
 
@@ -120,3 +122,26 @@ target_compile_options(${PROJECT_NAME} PRIVATE -fvisibility=default)
 target_link_options(${PROJECT_NAME} PRIVATE -Wl,-E)
 
 # add_subdirectory(patch/cpp)
+
+if(EXISTS ${CMAKE_BINARY_DIR}/dynamic.sym)
+    file(REMOVE ${CMAKE_BINARY_DIR}/dynamic.sym)
+endif()
+
+set(USE_STRIP OFF)
+
+if(CMAKE_BUILD_TYPE STREQUAL Release)
+    if(USE_STRIP)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${PROJECT_NAME}> $<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}_with_symbols.so
+            COMMAND ${CMAKE_STRIP} --strip-debug $<TARGET_FILE:${PROJECT_NAME}>
+            COMMENT "Stripping symbols from target"
+        )
+    else()
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_OBJCOPY} --only-keep-debug $<TARGET_FILE:${PROJECT_NAME}> $<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.sym
+            COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:${PROJECT_NAME}>
+            COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.sym $<TARGET_FILE:${PROJECT_NAME}>
+            COMMENT "Generating symbol file and stripping symbols from target"
+        )
+    endif()
+endif()

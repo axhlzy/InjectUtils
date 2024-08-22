@@ -218,7 +218,7 @@ KittyInjector kitInjector;
 std::chrono::duration<double, std::milli> inj_ms{};
 void inject(pid_t pid) {
     string lib = getSelfPath();
-    bool use_memfd = false, hide_maps = false, hide_solist = false, stopped = false;
+    bool use_memfd = false, hide_maps = true, hide_solist = false, stopped = false;
     injected_info_t ret{};
     if (kitInjector.init(pid, EK_MEM_OP_IO)) {
         if (!kitInjector.attach()) {

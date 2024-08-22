@@ -1,5 +1,5 @@
+#include "KittyMemoryEx.hpp"
 #include "main.h"
-#include <KittyMemoryEx.hpp>
 
 const char *PIPE_NAME = "/data/local/tmp/xxxx123123";
 
@@ -21,7 +21,7 @@ std::vector<std::string> getLuaCommands(lua_State *L = G_LUA) {
     while (lua_next(L, -2) != 0) {
         if (lua_isfunction(L, -1)) {
             const char *name = lua_tostring(L, -2);
-            functions.push_back(name);
+            functionNames.push_back(name);
         } else if (lua_istable(L, -2) != 0) {
             // ...
         }
@@ -47,7 +47,11 @@ void repl_socket(lua_State *L) {
 void start_local_repl() {
     LuaReplClient client(std::to_string(SOCKET_PORT));
     client.connect();
-    installRepl(getLuaCommands(), [&](const std::string &input) {
+
+    // todo
+    // getLuaCommands() 需要使用到 远程内存中的那一份lua* 需要同步一下数据
+
+    installRepl({""}, [&](const std::string &input) {
         if (input == "exit" || input == "q") {
             client.close_connect();
         } else {
