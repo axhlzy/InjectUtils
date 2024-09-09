@@ -1,14 +1,20 @@
-### Injector基本思路
+### 基本思路
 
-1. 将dobby，xdl，keystone，capstone 等库看成插件库，实现他们的lua绑定
+1. 将dobby，xdl，keystone，capstone，lief 等库看成插件库，实现他们的lua绑定
 2. 通过注入的方式(ptrace / [/proc/mem](https://github.com/erfur/linjector-rs))的方式进行指定pid的注入
-3. socket通信实现injector于宿主机的通信
-4. 客户端的实现目前考虑使用python作为前端，辅以命令行补全库实现方便的函数调用
-
-#### 目的：脱离frida的使用，更加自由定制化的插件库使用
-（后面也可以考虑使用JavaScript虚拟机）
+3. socket通信实现injector于宿主机的通信[ 这里的宿主机可以是安卓自己或者是windows/linux... ]
+   ( 其实也想使用到更上层好用的protobuf的做调用封装的，但是没空写，记录一下想法，先把大体功能跑起来后续再说怎么改把... )
+5. 交互目前使用命令行repl命令行补全的方式交互，后续可以考虑客户端的实现（python或者是其他语言编写的交互作为前端）
+---
+### 目的
+#### 脱离frida的使用，更加自由 `定制化` `工具化` 插件库使用
+---
+### 当前情况
+当前主要是使用lua绑定，后面也可以考虑使用JavaScript虚拟机，后续可以考虑使用到protobuf之类的协议库方便上层语言的封装调用
 
 ##### Lua 绑定使用到 [LuaBridge](https://github.com/vinniefalco/LuaBridge)  / [LuaBridge3](https://github.com/kunitoki/LuaBridge3) 后者更香 [文档](https://kunitoki.github.io/LuaBridge3/Manual)
+---
+### 备选
 
 ##### JavaScript虚拟机有很多备选
 1. [V8](https://chromium.googlesource.com/v8/v8.git) 还得是google优选
@@ -32,7 +38,9 @@
 5. [NullTrace-Injector](https://github.com/0NullBit0/NullTrace-Injector)
 
 ##### JDB CALL IMPL
-1. [jdwp-shellifier](https://github.com/IOActive/jdwp-shellifier)
+- 后续也可以绑定进去lua虚拟机，主打一个手动实现jdb在安卓上的调试器功能
+- 至于怎么开启jdwp线程参考 [这里 jdwp.ts#L243](https://github.com/axhlzy/Il2CppHookScripts/blob/79ce8ade596dbc591594bd5e361c7228168fb403/Il2cppHook/agent/plugin/jdwp/jdwp.ts#L243)
+1. [jdwp-shellifier](https://github.com/IOActive/jdwp-shellifier) 
 
 ##### 与Lua虚拟机交互
 - 安卓本地端创建一个socket服务器，远端windows/linux使用python或者再编译一个命令行程序用来与安卓通信
@@ -40,6 +48,7 @@
 
 ---
 
+### 使用说明
 使用的话还是很常规的操作
 
 `
@@ -90,7 +99,7 @@ setenforce 0
 
 ---
 
-`
+```
 Build说明：
 1.error: invalid argument '-std=c17' not allowed with 'C++'
 改一改 xdl 中的 target_compile_features 和 target_compile_options 为 PRIVATE
@@ -105,4 +114,4 @@ Build说明：
 #define cpsr ARM_cpsr
 #endif
 放在 KittyTrace.cpp 中
-`
+```
