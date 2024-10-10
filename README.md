@@ -91,10 +91,14 @@ setenforce 0
 ---
 
 `
+
 Build说明：
+
 1.error: invalid argument '-std=c17' not allowed with 'C++'
 改一改 xdl 中的 target_compile_features 和 target_compile_options 为 PRIVATE
+
 2.LIEF中的头文件定义和NDK中有些有冲突，看着爆红的注释掉就是了
+
 3.KittyTrace.hpp 在arm32 build的时候需要把  
 #if defined(__arm__)
 #define kREG_ARGS_NUM 4
@@ -105,4 +109,7 @@ Build说明：
 #define cpsr ARM_cpsr
 #endif
 放在 KittyTrace.cpp 中
+
+4.推荐使用ndk版本 25.1.8937393
+
 `

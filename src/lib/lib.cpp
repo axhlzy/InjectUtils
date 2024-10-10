@@ -47,10 +47,7 @@ void repl_socket(lua_State *L) {
 void start_local_repl() {
     LuaReplClient client(std::to_string(SOCKET_PORT));
     client.connect();
-
-    // todo
-    // getLuaCommands() 需要使用到 远程内存中的那一份lua* 需要同步一下数据
-
+    // todo getLuaCommands() mem sync with remote process
     installRepl({""}, [&](const std::string &input) {
         if (input == "exit" || input == "q") {
             client.close_connect();

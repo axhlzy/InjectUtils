@@ -371,7 +371,7 @@ std::string get_soinfo(const soinfo *info, const char *appendStart = "\t") {
 }
 
 std::string get_soinfo(PTR info) {
-    return get_soinfo((const soinfo *)info);
+    return get_soinfo(reinterpret_cast<const soinfo *>(info));
 }
 
 #include <fstream>
