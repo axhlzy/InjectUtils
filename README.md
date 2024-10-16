@@ -2,15 +2,32 @@
 
 1. 将dobby，xdl，keystone，capstone，lief 等库看成插件库，实现他们的lua绑定
 2. 通过注入的方式(ptrace / [/proc/mem](https://github.com/erfur/linjector-rs))的方式进行指定pid的注入
-3. socket通信实现injector于宿主机的通信[ 这里的宿主机可以是安卓自己或者是windows/linux... ]
+3. socket通信实现工具和宿主机的通信[ 这里的宿主机可以是安卓自己或者是windows/linux... ]，当前为了测试方便，不跨平台，就在当前命令行交互
    ( 其实也想使用到更上层好用的protobuf的做调用封装的，但是没空写，记录一下想法，先把大体功能跑起来后续再说怎么改把... )
-5. 交互目前使用命令行repl命令行补全的方式交互，后续可以考虑客户端的实现（python或者是其他语言编写的交互作为前端）
+4. 交互目前使用命令行repl命令行补全的方式交互(使用[replxx](https://github.com/AmokHuginnsson/replxx)做命令行补全的交互)，后续可以考虑客户端的实现（python或者是其他语言编写的交互作为前端）
 ---
-### 目的
-#### 脱离frida的使用，更加自由 `定制化` `工具化` 插件库使用
+### 目标
+#### 脱离frida的使用，更加自由的使用 `定制化` `工具化` 的插件库
 ---
 ### 当前情况
-当前主要是使用lua绑定，后面也可以考虑使用JavaScript虚拟机，后续可以考虑使用到protobuf之类的协议库方便上层语言的封装调用
+当前用的是lua绑定，后面也可以考虑使用JavaScript虚拟机，后续可以考虑使用到protobuf之类的协议库方便上层语言的封装调用
+1. 两个启动方式 [ 注入 /  仅启动（调试测试用） ]
+2. 绑定库
+     - keystone（ks）| capstone（cs、dis）
+     - BIND_BREAKPOINT （b）
+     - linker (somain, wait, disp_soinfo_link, disp_link_map_head, get_soinfo, show_soinfo, show_symtab, find_soinfo)
+     - process (getpid, getppid, getgid, geteuid, getuid, getpagesize, getcwd, now)
+     - signal (raise, cont)
+     - xdl (info, iteratePhdr, addressInfo, xdl_open, xdl_close, xdl_sym, xdl_dsym)
+     - others（demangleName、findsyms、syms）
+     - ......
+3. 功能封装
+     - linker wait （断点下在call_constructors，等待so加载，获取基础soinfo信息）
+     - ...
+
+### TODO
+1. 封装 nativehook 前后端 ( [Dobby](https://github.com/jmpews/Dobby), [frida-gum](https://github.com/frida/frida-gum), [xhook](https://github.com/iqiyi/xHook), [bhook](https://github.com/bytedance/bhook) )
+2. 封装 javahook 前后端（ [pine](https://github.com/canyie/pine), [YAHFA](https://github.com/PAGalaxyLab/YAHFA) ） 、 加入测试性功能Java断点 [JVMTI](https://docs.oracle.com/javase/8/docs/platform/jvmti/jvmti.html#fieldWatch) | [REF:frida jvmti.js](https://github.com/frida/frida-java-bridge/blob/a3b0de51451dd38e9dfcbaa1fbc744745bab9579/lib/jvmti.js#L37)
 
 ##### Lua 绑定使用到 [LuaBridge](https://github.com/vinniefalco/LuaBridge)  / [LuaBridge3](https://github.com/kunitoki/LuaBridge3) 后者更香 [文档](https://kunitoki.github.io/LuaBridge3/Manual)
 ---
@@ -106,7 +123,7 @@ Build说明：
 1.error: invalid argument '-std=c17' not allowed with 'C++'
 改一改 xdl 中的 target_compile_features 和 target_compile_options 为 PRIVATE
 
-2.LIEF中的头文件定义和NDK中有些有冲突，看着爆红的注释掉就是了
+2.LIEF中的头文件定义和NDK中有些有冲突，看着爆红的注释掉就是了 （头文件引入的宏定义有点冲突）
 
 3.KittyTrace.hpp 在arm32 build的时候需要把  
 #if defined(__arm__)
