@@ -27,8 +27,8 @@
 
 ### TODO
 1. 封装 nativehook 前后端 ( [Dobby](https://github.com/jmpews/Dobby), [frida-gum](https://github.com/frida/frida-gum), [xhook](https://github.com/iqiyi/xHook), [bhook](https://github.com/bytedance/bhook) )
-2. 封装 javahook 前后端（ [pine](https://github.com/canyie/pine), [YAHFA](https://github.com/PAGalaxyLab/YAHFA) ） 、 加入测试性功能Java断点 [JVMTI](https://docs.oracle.com/javase/8/docs/platform/jvmti/jvmti.html#fieldWatch) | [REF:frida jvmti.js](https://github.com/frida/frida-java-bridge/blob/a3b0de51451dd38e9dfcbaa1fbc744745bab9579/lib/jvmti.js#L37)
-
+2. 封装 javahook 前后端（ [pine](https://github.com/canyie/pine), [YAHFA](https://github.com/PAGalaxyLab/YAHFA) ） 、 加入测试性功能Java断点 [REF:doc JVMTI](https://docs.oracle.com/javase/8/docs/platform/jvmti/jvmti.html#fieldWatch) | [REF:frida jvmti.js](https://github.com/frida/frida-java-bridge/blob/a3b0de51451dd38e9dfcbaa1fbc744745bab9579/lib/jvmti.js#L37) | [REF:android jvmti.h](https://cs.android.com/android/platform/superproject/main/+/main:art/openjdkjvmti/include/jvmti.h;l=1018)
+ 
 ##### Lua 绑定使用到 [LuaBridge](https://github.com/vinniefalco/LuaBridge)  / [LuaBridge3](https://github.com/kunitoki/LuaBridge3) 后者更香 [文档](https://kunitoki.github.io/LuaBridge3/Manual)
 ---
 ### 备选
