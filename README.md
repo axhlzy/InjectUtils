@@ -51,7 +51,7 @@
 1. [AndKittyInjector](https://github.com/MJx0/AndKittyInjector) 最完备的实现
 2. [AndroidPtraceInject](https://github.com/SsageParuders/AndroidPtraceInject) 注释非常清晰
 3. [TinyInjector](https://github.com/shunix/TinyInjector) ...
-4. [linjector-rs](https://github.com/erfur/linjector-rs) injection using /proc/mem
+4. [linjector-rs](https://github.com/erfur/linjector-rs) / [intruducer](https://github.com/vfsfitvnm/intruducer) injection using /proc/mem
 5. [NullTrace-Injector](https://github.com/0NullBit0/NullTrace-Injector)
 
 ##### JDB CALL IMPL
