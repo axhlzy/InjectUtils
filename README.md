@@ -34,10 +34,11 @@
 ### 备选
 
 ##### JavaScript虚拟机有很多备选
-1. [V8](https://chromium.googlesource.com/v8/v8.git) 还得是google优选
-2. [QuickJS](https://github.com/bellard/quickjs) 经典的极简虚拟机，但是不支持lambda
-3. [Duktape](https://github.com/svaarala/duktape) 体验也不错,多了一个inline repl，但是依旧不支持lambda
-4. [jerryscript](https://github.com/jerryscript-project/jerryscript) 编译了一个windows版本的好像还挺中规中矩的
+0. [hermes](https://github.com/facebook/hermes) Facebook 专门为 React Native 框架在移动端（Android 和 iOS）设计的 JS 引擎
+1. [V8](https://chromium.googlesource.com/v8/v8.git)  Google Chrome 浏览器使用的 JS 引擎, 支持最新的 ECMAScript 标准特性
+2. [QuickJS](https://github.com/bellard/quickjs) 体积极小启动速度非常快
+3. [Duktape](https://github.com/svaarala/duktape) 轻量级支持的 ECMAScript 标准相对较旧（主要支持 ES5/ES6 部分特性）,性能和功能不如 V8、JSC 或 QuickJS擎, 多了一个inline repl
+4. [jerryscript](https://github.com/jerryscript-project/jerryscript) ECMAScript 标准支持有限,移动端性能也不太行
 5. [ChakraCore](https://github.com/chakra-core/ChakraCore) 来自微软的ERROR: Unsupported target processor: aarch64 (-.-!)
    
 ##### 总体还是觉得v8比较舒服（除了编译麻烦点），配合dobby hook函数可以使用到lambda，命令行使用起来更简洁
