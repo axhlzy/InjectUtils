@@ -3,8 +3,8 @@
 1. 将dobby，xdl，keystone，capstone，lief 等库看成插件库，实现他们的lua绑定
 2. 通过注入的方式(ptrace / [/proc/mem](https://github.com/erfur/linjector-rs))的方式进行指定pid的注入
 3. socket通信实现工具和宿主机的通信[ 这里的宿主机可以是安卓自己或者是windows/linux... ]，当前为了测试方便，不跨平台，就在当前命令行交互
-   ( 其实也想使用到更上层好用的protobuf的做调用封装的，但是没空写，记录一下想法，先把大体功能跑起来后续再说怎么改把... )
-4. 交互目前使用命令行repl命令行补全的方式交互(使用[replxx](https://github.com/AmokHuginnsson/replxx)做命令行补全的交互)，后续可以考虑客户端的实现（python或者是其他语言编写的交互作为前端）
+   ( 其实也想使用到更上层好用的gprc/thrift做调用封装，先记录一下想法，先把大体功能跑起来后续再说怎么改把... )
+5. 交互目前使用命令行repl命令行补全的方式交互(使用[replxx](https://github.com/AmokHuginnsson/replxx)做命令行补全的交互)，后续可以考虑客户端的实现（python或者是其他语言编写的交互作为前端）
 ---
 ### 目标
 #### 脱离frida的使用，更加自由的使用 `定制化` `工具化` 的插件库
@@ -58,7 +58,13 @@
 ##### JDB CALL IMPL
 - 后续也可以绑定进去lua虚拟机，主打一个手动实现jdb在安卓上的调试器功能
 - 至于怎么开启jdwp线程参考 [这里 jdwp.ts#L243](https://github.com/axhlzy/Il2CppHookScripts/blob/79ce8ade596dbc591594bd5e361c7228168fb403/Il2cppHook/agent/plugin/jdwp/jdwp.ts#L243)
-1. [jdwp-shellifier](https://github.com/IOActive/jdwp-shellifier) 
+1. [jdwp-shellifier](https://github.com/IOActive/jdwp-shellifier)
+2. [jtik](https://github.com/chancerly/jtik)
+3. [MemoryMonitor](https://github.com/xingfengwxx/MemoryMonitor)
+4. [ART TI](https://source.android.google.cn/docs/core/runtime/art-ti?hl=zh-cn)
+5. [jvmti](https://docs.oracle.com/javase/7/docs/platform/jvmti/jvmti.html#SpecificationIntro)
+6. [openjdkjvmti events](https://cs.android.com/android/platform/superproject/main/+/main:art/openjdkjvmti/events.h;l=58)
+7. [slicer](https://cs.android.com/android/platform/superproject/main/+/main:tools/dexter/slicer/)
 
 ##### 与Lua虚拟机交互
 - 安卓本地端创建一个socket服务器，远端windows/linux使用python或者再编译一个命令行程序用来与安卓通信
