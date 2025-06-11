@@ -3,198 +3,199 @@
 
 const char *PIPE_NAME = "/data/local/tmp/xxxx123123";
 
-void serializeToPipe(int pipe_fd, const std::vector<std::string> &data) {
-}
+void serializeToPipe(int pipe_fd, const std::vector<std::string> &data) {}
 
-void deserializeFromPipe(int pipe_fd, std::vector<std::string> &data) {
-}
+void deserializeFromPipe(int pipe_fd, std::vector<std::string> &data) {}
 
 #include <LuaSocket/LuaReplClient.hpp>
 #include <LuaSocket/LuaReplServer.hpp>
 
-extern int installRepl(const std::vector<std::string> &suggestions, std::function<void(const std::string &)> callback);
+extern int installRepl(const std::vector<std::string> &suggestions,
+                       std::function<void(const std::string &)> callback);
 
 std::vector<std::string> getLuaCommands(lua_State *L = G_LUA) {
-    std::vector<std::string> functionNames;
-    lua_pushglobaltable(L);
-    lua_pushnil(L);
-    while (lua_next(L, -2) != 0) {
-        if (lua_isfunction(L, -1)) {
-            const char *name = lua_tostring(L, -2);
-            functionNames.push_back(name);
-        } else if (lua_istable(L, -2) != 0) {
-            // ...
-        }
-        lua_pop(L, 1);
+  std::vector<std::string> functionNames;
+  lua_pushglobaltable(L);
+  lua_pushnil(L);
+  while (lua_next(L, -2) != 0) {
+    if (lua_isfunction(L, -1)) {
+      const char *name = lua_tostring(L, -2);
+      functionNames.push_back(name);
+    } else if (lua_istable(L, -2) != 0) {
+      // ...
     }
     lua_pop(L, 1);
-    return functionNames;
+  }
+  lua_pop(L, 1);
+  return functionNames;
 }
 
 // run on remote
 void repl_socket(lua_State *L) {
-    logd("[*] start lua repl | Socket Mode | %d", SOCKET_PORT);
-    try {
-        boost::asio::io_context io_context;
-        LuaReplServer server(io_context, SOCKET_PORT, L);
-        io_context.run();
-    } catch (const std::exception &e) {
-        std::cerr << e.what() << '\n';
-    }
+  logd("[*] start lua repl | Socket Mode | %d", SOCKET_PORT);
+  try {
+    boost::asio::io_context io_context;
+    LuaReplServer server(io_context, SOCKET_PORT, L);
+    io_context.run();
+  } catch (const std::exception &e) {
+    std::cerr << e.what() << '\n';
+  }
 }
 
 // run on local
 void start_local_repl() {
-    LuaReplClient client(std::to_string(SOCKET_PORT));
-    client.connect();
-    // todo getLuaCommands() mem sync with remote process
-    installRepl({""}, [&](const std::string &input) {
-        if (input == "exit" || input == "q") {
-            client.close_connect();
-        } else {
-            client.send_message(input);
-        }
-    });
+  LuaReplClient client(std::to_string(SOCKET_PORT));
+  client.connect();
+  // todo getLuaCommands() mem sync with remote process
+  installRepl({""}, [&](const std::string &input) {
+    if (input == "exit" || input == "q") {
+      client.close_connect();
+    } else {
+      client.send_message(input);
+    }
+  });
 }
 
 void repl(lua_State *L) {
-    logd("[*] start lua repl | Debug Mode");
-    installRepl(getLuaCommands(L), [&](const std::string &input) {
-        if (input == "exit" || input == "q")
-            exit(0);
-        if (input.empty())
-            return;
-        int status = luaL_dostring(L, input.c_str());
-        if (reinterpret_cast<LUA_STATUS &>(status) != LUA_STATUS::LUA_OK_) {
-            const char *msg = lua_tostring(L, -1);
-            lua_writestringerror("%s\n", msg);
-            lua_pop(L, 1);
-        }
-    });
+  logd("[*] start lua repl | Debug Mode");
+  installRepl(getLuaCommands(L), [&](const std::string &input) {
+    if (input == "exit" || input == "q")
+      exit(0);
+    if (input.empty())
+      return;
+    int status = luaL_dostring(L, input.c_str());
+    if (reinterpret_cast<LUA_STATUS &>(status) != LUA_STATUS::LUA_OK_) {
+      const char *msg = lua_tostring(L, -1);
+      lua_writestringerror("%s\n", msg);
+      lua_pop(L, 1);
+    }
+  });
 }
 
 auto getApp(JNIEnv *env) -> jobject {
-    jclass activityThreadClass = env->FindClass("android/app/ActivityThread");
-    if (activityThreadClass == nullptr) {
-        return nullptr;
-    }
-    jmethodID currentApplicationMethod = env->GetStaticMethodID(activityThreadClass, "currentApplication", "()Landroid/app/Application;");
-    if (currentApplicationMethod == nullptr) {
-        return nullptr;
-    }
-    jobject application = env->CallStaticObjectMethod(activityThreadClass, currentApplicationMethod);
-    if (env->ExceptionCheck()) {
-        env->ExceptionClear();
-        return nullptr;
-    }
-    return application;
+  jclass activityThreadClass = env->FindClass("android/app/ActivityThread");
+  if (activityThreadClass == nullptr) {
+    return nullptr;
+  }
+  jmethodID currentApplicationMethod = env->GetStaticMethodID(
+      activityThreadClass, "currentApplication", "()Landroid/app/Application;");
+  if (currentApplicationMethod == nullptr) {
+    return nullptr;
+  }
+  jobject application = env->CallStaticObjectMethod(activityThreadClass,
+                                                    currentApplicationMethod);
+  if (env->ExceptionCheck()) {
+    env->ExceptionClear();
+    return nullptr;
+  }
+  return application;
 };
 
-JNIEXPORT jint JNICALL
-JNI_OnLoad(JavaVM *vm, void *reserved) {
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
 
-    S_TYPE = vm == nullptr ? START_TYPE::DEBUG : START_TYPE::SOCKET;
+  S_TYPE = vm == nullptr ? START_TYPE::DEBUG : START_TYPE::SOCKET;
 
-    std::string msg = fmt::format("[+] CURRENT -> {} | {} | {}",
-                                  (int)getpid(),
-                                  KittyMemoryEx::getProcessName(getpid()),
-                                  magic_enum::enum_name(S_TYPE));
-    logd("%s", msg.c_str());
-    std::cout << msg << std::endl;
+  std::string msg = fmt::format("[+] CURRENT -> {} | {} | {}", (int)getpid(),
+                                KittyMemoryEx::getProcessName(getpid()),
+                                magic_enum::enum_name(S_TYPE));
+  logd("%s", msg.c_str());
+  std::cout << msg << std::endl;
 
-    g_thread = new std::thread([=]() {
-        if (vm != nullptr) {
-            g_jvm = vm;
-            logd("------------------- JNI_OnLoad -------------------");
-            if (vm->AttachCurrentThread(&g_env, nullptr) == JNI_OK) {
-                logd("[*] AttachCurrentThread OK");
-            };
-            if (vm->GetEnv((void **)&g_env, JNI_VERSION_1_6) == JNI_OK) {
-                logd("[*] GetEnv OK | env:%p | vm:%p", g_env, vm);
-            }
-            g_application = getApp(g_env);
-        }
-        pthread_setname_np(pthread_self(), EXEC_NAME);
-        startLuaVM();
-        vm->DetachCurrentThread();
-    });
+  g_thread = new std::thread([=]() {
+    if (vm != nullptr) {
+      g_jvm = vm;
 
-    if (S_TYPE == START_TYPE::DEBUG && g_thread->joinable()) {
-        g_thread->join();
+      logd("------------------- JNI_OnLoad -------------------");
+      if (vm->AttachCurrentThread(&g_env, nullptr) == JNI_OK) {
+        logd("[*] AttachCurrentThread OK");
+      };
+      if (vm->GetEnv((void **)&g_env, JNI_VERSION_1_6) == JNI_OK) {
+        logd("[*] GetEnv OK | env:%p | vm:%p", g_env, vm);
+      }
+      g_application = getApp(g_env);
     }
+    pthread_setname_np(pthread_self(), EXEC_NAME);
+    startLuaVM();
+    vm->DetachCurrentThread();
+  });
 
-    return JNI_VERSION_1_6;
+  if (S_TYPE == START_TYPE::DEBUG && g_thread->joinable()) {
+    g_thread->join();
+  }
+
+  return JNI_VERSION_1_6;
 }
 
 // noreturn
 inline void startRepl(lua_State *L) {
-    if (S_TYPE == START_TYPE::DEBUG) {
-        repl(L);
-    } else if (S_TYPE == START_TYPE::SOCKET) {
-        repl_socket(L);
-    }
+  if (S_TYPE == START_TYPE::DEBUG) {
+    repl(L);
+  } else if (S_TYPE == START_TYPE::SOCKET) {
+    repl_socket(L);
+  }
 }
 
 static int countRestartTimes = 0;
 
 void initVM() {
-    if (++countRestartTimes > 3)
-        raise(SIGKILL);
+  if (++countRestartTimes > 3)
+    raise(SIGKILL);
 
-    lua_State *L = luaL_newstate();
+  lua_State *L = luaL_newstate();
 
-    G_LUA = std::ref(L);
+  G_LUA = std::ref(L);
 
-    luaL_openlibs(L);
+  luaL_openlibs(L);
 
-    bind_libs(L);
+  bind_libs(L);
 
-    startRepl(L);
+  startRepl(L);
 
-    // test(L);
+  // test(L);
 
-    lua_close(L);
+  lua_close(L);
 }
 
 void startLuaVM() {
 
-    reg_crash_handler();
+  reg_crash_handler();
 
-    initVM();
+  initVM();
 }
 
 #ifdef GENLIB
 
 __MAIN__ void preInitInject() {
 
-    void *handle = xdl_open("libart.so", XDL_DEFAULT);
-    if (handle == nullptr) {
-        logd("[!] xdl_open libart.so failed");
-        return;
-    }
-    void *addr = xdl_sym(handle, "JNI_GetCreatedJavaVMs", nullptr);
-    if (addr == nullptr) {
-        logd("[!] xdl_sym JNI_GetCreatedJavaVMs failed");
-        return;
-    }
+  void *handle = xdl_open("libart.so", XDL_DEFAULT);
+  if (handle == nullptr) {
+    logd("[!] xdl_open libart.so failed");
+    return;
+  }
+  void *addr = xdl_sym(handle, "JNI_GetCreatedJavaVMs", nullptr);
+  if (addr == nullptr) {
+    logd("[!] xdl_sym JNI_GetCreatedJavaVMs failed");
+    return;
+  }
 
-    // logd("[*] %d JNI_GetCreatedJavaVMs -> %p", getpid(), addr);
+  // logd("[*] %d JNI_GetCreatedJavaVMs -> %p", getpid(), addr);
 
-    xdl_close(handle);
+  xdl_close(handle);
 
-    using JNI_GetCreatedJavaVMs_t = jint (*)(JavaVM **vmBuf, jsize bufLen, jsize *nVMs);
-    auto JNI_GetCreatedJavaVMs = reinterpret_cast<JNI_GetCreatedJavaVMs_t>(addr);
-    JavaVM *vm = nullptr;
-    jsize nVMs = 0;
-    JNI_GetCreatedJavaVMs(&vm, 1, &nVMs);
-    // logd("[*] vm -> %p | nVMs -> %d", vm, nVMs);
+  using JNI_GetCreatedJavaVMs_t =
+      jint (*)(JavaVM **vmBuf, jsize bufLen, jsize *nVMs);
+  auto JNI_GetCreatedJavaVMs = reinterpret_cast<JNI_GetCreatedJavaVMs_t>(addr);
+  JavaVM *vm = nullptr;
+  jsize nVMs = 0;
+  JNI_GetCreatedJavaVMs(&vm, 1, &nVMs);
+  // logd("[*] vm -> %p | nVMs -> %d", vm, nVMs);
 
-    if (vm == nullptr) {
-        logd("[!] JNI_GetCreatedJavaVMs failed");
-        return;
-    }
+  if (vm == nullptr) {
+    logd("[!] JNI_GetCreatedJavaVMs failed");
+    return;
+  }
 
-    JNI_OnLoad(vm, nullptr);
+  JNI_OnLoad(vm, nullptr);
 }
 
 #endif
