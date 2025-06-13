@@ -28,6 +28,10 @@
 ### TODO
 1. 封装 nativehook 前后端 ( [Dobby](https://github.com/jmpews/Dobby), [frida-gum](https://github.com/frida/frida-gum), [xhook](https://github.com/iqiyi/xHook), [bhook](https://github.com/bytedance/bhook) )
 2. 封装 javahook 前后端（ [pine](https://github.com/canyie/pine), [YAHFA](https://github.com/PAGalaxyLab/YAHFA) ） 、 加入测试性功能Java断点 [REF:doc JVMTI](https://docs.oracle.com/javase/8/docs/platform/jvmti/jvmti.html#fieldWatch) | [REF:frida jvmti.js](https://github.com/frida/frida-java-bridge/blob/a3b0de51451dd38e9dfcbaa1fbc744745bab9579/lib/jvmti.js#L37) | [REF:android jvmti.h](https://cs.android.com/android/platform/superproject/main/+/main:art/openjdkjvmti/include/jvmti.h;l=1018)
+
+### 一些其他问题
+1. 关于libart部分的代码，虽然clone下来了，但是也只是用作新增代码补全的参考，实际上只用到了头文件，并没有把它们编译进去，这里就涉及到一个问题，如何链接到libart原本的函数，原本的思路是直接pull出手机中的libart.so 然后写一个module让它动态链接的，但是发现安卓高版本是不让我们直接访问系统lib的（但是这个好像有办法解决，暂时没空研究），所以换了个思路直接写一个fakelibart编译进源码, 去把我们后续可能用到的函数全部代理出来，使用xdl解析出来转为函数指针封装其调用，让编译器在静态链接的时候能找到就可以了
+2. 关于rpc想使用双向流，但是又考虑到后续可能会进行函数封装给到客户端的js或者lua虚拟机调用，双向流展示倒是方便了，但是不太适合客户端虚拟机
  
 ##### Lua 绑定使用到 [LuaBridge](https://github.com/vinniefalco/LuaBridge)  / [LuaBridge3](https://github.com/kunitoki/LuaBridge3) 后者更香 [文档](https://kunitoki.github.io/LuaBridge3/Manual)
 ---
@@ -126,6 +130,8 @@ setenforce 0
 ```
 
 Build说明：
+
+（这些后续有时间可以写个脚本来改改clone下来的这些问题）
 
 1.error: invalid argument '-std=c17' not allowed with 'C++'
 改一改 xdl 中的 target_compile_features 和 target_compile_options 为 PRIVATE
