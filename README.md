@@ -69,6 +69,7 @@
 5. [jvmti](https://docs.oracle.com/javase/7/docs/platform/jvmti/jvmti.html#SpecificationIntro)
 6. [openjdkjvmti events](https://cs.android.com/android/platform/superproject/main/+/main:art/openjdkjvmti/events.h;l=58)
 7. [slicer](https://cs.android.com/android/platform/superproject/main/+/main:tools/dexter/slicer/)
+8. [jdwp-injector-for-android](https://github.com/wuyr/jdwp-injector-for-android)
 
 ##### 与Lua虚拟机交互
 - 安卓本地端创建一个socket服务器，远端windows/linux使用python或者再编译一个命令行程序用来与安卓通信
