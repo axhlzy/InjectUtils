@@ -43,7 +43,8 @@
 2. [QuickJS](https://github.com/bellard/quickjs) 体积极小启动速度非常快
 3. [Duktape](https://github.com/svaarala/duktape) 轻量级支持的 ECMAScript 标准相对较旧（主要支持 ES5/ES6 部分特性）,性能和功能不如 V8、JSC 或 QuickJS擎, 多了一个inline repl
 4. [jerryscript](https://github.com/jerryscript-project/jerryscript) ECMAScript 标准支持有限,移动端性能也不太行
-5. [ChakraCore](https://github.com/chakra-core/ChakraCore) 来自微软的ERROR: Unsupported target processor: aarch64 (-.-!)
+5. [mujs](https://github.com/ccxvii/mujs)
+6. [ChakraCore](https://github.com/chakra-core/ChakraCore) 来自微软的ERROR: Unsupported target processor: aarch64 (-.-!)
    
 ##### 总体还是觉得v8比较舒服（除了编译麻烦点），配合dobby hook函数可以使用到lambda，命令行使用起来更简洁
 
