@@ -1,12 +1,13 @@
 #pragma once
 
+#include "config.h"
 #include <android/log.h>
 
 #include <spdlog/sinks/android_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-static const char *TAG = "ZZZ";
+static const char *TAG = Config::LOG_TAG;
 
 #define logd(...) __android_log_print(ANDROID_LOG_DEBUG, TAG, __VA_ARGS__)
 #define loge(...) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__)

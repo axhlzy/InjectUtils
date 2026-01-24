@@ -2,6 +2,7 @@
 
 using namespace std;
 
+#include <semaphore.h>
 #include "Injector/KittyInjector.hpp"
 #include "KittyMemoryMgr.hpp"
 KittyMemoryMgr kittyMemMgr;
@@ -54,9 +55,12 @@ void showRegs(ucontext_t *ucontext) {
 #define USE_SIGNAL 0
 
 #include <setjmp.h>
-jmp_buf recover;
-void *sp = nullptr;
-struct sigaction sa;
+
+// 使用 thread_local 确保线程安全
+thread_local jmp_buf recover;
+thread_local void *sp = nullptr;
+thread_local struct sigaction sa;
+
 void reg_crash_handler() {
 
 #if USE_SIGNAL

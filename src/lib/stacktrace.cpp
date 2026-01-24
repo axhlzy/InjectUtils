@@ -133,20 +133,19 @@ std::vector<uintptr_t> stacktrace(rword pc, rword lr, rword fp, rword sp) {
 // Utils::printBacktrace(vec);
 
 void dumpBacktrace(void **buffer, size_t count) {
-    // #ifndef DEBUG_PROJECT
-    //     return;
-    // #endif
+#ifndef DEBUG_PROJECT
+    return;
+#endif
     vector<void *> backtraceArray(buffer, buffer + count);
     printBacktrace(backtraceArray);
 };
 
 #define USE_BOOST_Backtrace 0
-#define DEBUG_PROJECT 1
 
 void UnwindBacktrace(const string &lastFunctionName, bool printRegisters) {
-    // #ifndef DEBUG_PROJECT
-    //     return;
-    // #endif
+#ifndef DEBUG_PROJECT
+    return;
+#endif
 
 #if USE_BOOST_Backtrace
 

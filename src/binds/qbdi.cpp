@@ -1,5 +1,6 @@
 #include "QBDI.h"
 #include "bindings.h"
+#include "config.h"
 #include "linker_soinfo.h"
 #include "stacktrace.h"
 
@@ -12,13 +13,13 @@ class QBDI_TRACE {
 private:
     inline static uintptr_t _libBase; // 全局
     uint8_t *_fakestack = nullptr;
-    QBDI::VM *_vm = new QBDI::VM();
+    std::unique_ptr<QBDI::VM> _vm;
     rword _retVal;
     rword gfp = 0;
     const soinfo *_soinfo;
 
 public:
-    QBDI_TRACE() {
+    QBDI_TRACE() : _vm(std::make_unique<QBDI::VM>()) {
     }
 
     QBDI_TRACE(PTR info) {
@@ -30,7 +31,6 @@ public:
     }
 
     ~QBDI_TRACE() {
-        delete _vm;
         QBDI::alignedFree(_fakestack);
     }
 
@@ -145,7 +145,7 @@ public:
 
     void vmCall(QBDI::rword funcPtr) {
         QBDI::GPRState *state = _vm->getGPRState();
-        QBDI::allocateVirtualStack(state, 0x1000 * 10000, &_fakestack);
+        QBDI::allocateVirtualStack(state, Config::VIRTUAL_STACK_SIZE, &_fakestack);
         _vm->addInstrumentedModuleFromAddr(funcPtr);
 
         printStartStatus(state);
@@ -208,6 +208,6 @@ BINDFUNC(qbdi) {
         .addConstructor<void (*)(const soinfo *)>()
         .addFunction("vmCall", luabridge::overload<QBDI::rword>(&QBDI_TRACE::vmCall))
         .endClass();
-    static auto trace = new QBDI_TRACE();
-    luabridge::setGlobal(L, trace, "qbdi");
+    static QBDI_TRACE trace;
+    luabridge::setGlobal(L, &trace, "qbdi");
 }

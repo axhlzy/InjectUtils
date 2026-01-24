@@ -1,7 +1,9 @@
 #include "KittyMemoryEx.hpp"
 #include "main.h"
+#include "config.h"
 
-const char *PIPE_NAME = "/data/local/tmp/xxxx123123";
+// 使用配置常量替代硬编码
+const char *PIPE_NAME = Config::PIPE_NAME;
 
 void serializeToPipe(int pipe_fd, const std::vector<std::string> &data) {}
 
@@ -73,6 +75,11 @@ void repl(lua_State *L) {
 }
 
 auto getApp(JNIEnv *env) -> jobject {
+  if (env == nullptr) {
+    console->error("getApp: env is nullptr");
+    return nullptr;
+  }
+  
   jclass activityThreadClass = env->FindClass("android/app/ActivityThread");
   if (activityThreadClass == nullptr) {
     return nullptr;
@@ -101,7 +108,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
   logd("%s", msg.c_str());
   std::cout << msg << std::endl;
 
-  g_thread = new std::thread([=]() {
+  g_thread = std::make_unique<std::thread>([=]() {
     if (vm != nullptr) {
       g_jvm = vm;
 
@@ -116,7 +123,9 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     }
     pthread_setname_np(pthread_self(), EXEC_NAME);
     startLuaVM();
-    vm->DetachCurrentThread();
+    if (vm != nullptr) {
+      vm->DetachCurrentThread();
+    }
   });
 
   if (S_TYPE == START_TYPE::DEBUG && g_thread->joinable()) {
@@ -138,7 +147,7 @@ inline void startRepl(lua_State *L) {
 static int countRestartTimes = 0;
 
 void initVM() {
-  if (++countRestartTimes > 3)
+  if (++countRestartTimes > Config::MAX_RESTART_TIMES)
     raise(SIGKILL);
 
   lua_State *L = luaL_newstate();
@@ -167,9 +176,9 @@ void startLuaVM() {
 
 __MAIN__ void preInitInject() {
 
-  void *handle = xdl_open("libart.so", XDL_DEFAULT);
+  void *handle = xdl_open(Config::LIBART_SO, XDL_DEFAULT);
   if (handle == nullptr) {
-    logd("[!] xdl_open libart.so failed");
+    logd("[!] xdl_open %s failed", Config::LIBART_SO);
     return;
   }
   void *addr = xdl_sym(handle, "JNI_GetCreatedJavaVMs", nullptr);

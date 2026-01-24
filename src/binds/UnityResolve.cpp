@@ -67,6 +67,6 @@ BINDFUNC(UnityResolve) {
         // // .addFunction("Cast", &UnityResolve::Method::Cast<std::int32_t>)
         .endClass();
 
-    static auto unity = new UnityResolve();
-    luabridge::setGlobal(L, unity, "UR");
+    static UnityResolve unity;
+    luabridge::setGlobal(L, &unity, "UR");
 }

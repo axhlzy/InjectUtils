@@ -76,8 +76,8 @@ BINDFUNC(dobby) {
         .addStaticFunction("version", &dobby_bind::version)
         .endClass();
 
-    static auto dobby = new dobby_bind();
-    luabridge::setGlobal(L, dobby, "dobby_bind");
+    static dobby_bind dobby;
+    luabridge::setGlobal(L, &dobby, "dobby_bind");
 
     // alias
     luabridge::getGlobalNamespace(L)

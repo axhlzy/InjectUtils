@@ -19,10 +19,6 @@ int main(int argc, char *argv[]) {
             return 0;
         }
 
-        // for debug
-        // console->info("{}", getpid());
-        // raise(SIGSTOP);
-
         if (result.count("debug") || result.count("d")) {
             JNI_OnLoad(nullptr, nullptr);
             return 0;

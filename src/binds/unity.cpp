@@ -1,11 +1,12 @@
 #include "UnityResolve.hpp"
 #include "bindings.h"
+#include "config.h"
 #include "xdl.h"
 
 class unity_bind {
 public:
     unity_bind() {
-        void *handle_xdl = xdl_open("libil2cpp.so", RTLD_LAZY);
+        void *handle_xdl = xdl_open(Config::LIBIL2CPP_SO, RTLD_LAZY);
         UnityResolve::Init(handle_xdl, UnityResolve::Mode::Il2Cpp);
     }
 
@@ -36,9 +37,9 @@ BINDFUNC(unity) {
         .addFunction("assemblies", &unity_bind::assemblies)
         .addFunction("Get", &unity_bind::Get)
         .endClass();
-    void *handle_xdl = xdl_open("libil2cpp.so", RTLD_LAZY);
+    void *handle_xdl = xdl_open(Config::LIBIL2CPP_SO, RTLD_LAZY);
     if (handle_xdl == nullptr)
         throw std::runtime_error(fmt::format("[*] luabridge bind unity failed @ [ {} ]", __func__));
-    static auto unity = new unity_bind();
-    luabridge::setGlobal(L, unity, "unity");
+    static unity_bind unity;
+    luabridge::setGlobal(L, &unity, "unity");
 }

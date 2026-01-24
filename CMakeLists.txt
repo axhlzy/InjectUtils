@@ -21,6 +21,9 @@ endif()
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 17)
 
+# Fix Boost compatibility with C++17 (std::unary_function removed)
+add_definitions(-D_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
+
 set(PREBUILT_DIR ${CMAKE_SOURCE_DIR}/prebuilt)
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
@@ -45,9 +48,19 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-fdeclspec)
 endif()
 
-set(COMMON "-fPIC -w -o0 -g")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMMON} ")
+# 根据构建类型设置编译选项
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    set(COMMON "-fPIC -Wall -Wextra -O0 -g")
+else()
+    set(COMMON "-fPIC -Wall -O2 -DNDEBUG")
+endif()
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMMON}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMMON}")
+
+# 为第三方库保存当前的编译标志
+set(SAVED_CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+set(SAVED_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 # gen common static lib
 set(LIB_DEPENDENCIES ${PROJECT_NAME}_DEPENDENCIES)
@@ -61,8 +74,16 @@ list(APPEND LINK_LIBS plugins)
 add_subdirectory(lua)
 list(APPEND LINK_LIBS lua_vm)
 
+# 临时禁用严格警告以编译第三方库
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error -Wno-unsafe-buffer-usage -Wno-declaration-after-statement")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
+
 add_subdirectory(libs)
 list(APPEND LINK_LIBS libs)
+
+# 恢复编译标志
+set(CMAKE_C_FLAGS "${SAVED_CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "${SAVED_CMAKE_CXX_FLAGS}")
 
 add_subdirectory(tools)
 list(APPEND LINK_LIBS tools)

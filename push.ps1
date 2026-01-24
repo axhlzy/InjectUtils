@@ -1,48 +1,68 @@
+# 用途: 推送注入库到目标应用的 lib 目录
+# 功能: 自动检测架构，推送编译好的注入库到应用目录
+# 用法: .\push.ps1 [-ApkName "包名"] [-InjectLib "库路径"] [-renameTo "目标名称"]
+
 param (
-    [string]$ApkName="com.tencent.tmgp.dpcq",
-    [string]$InjectLib="prebuilt/arm64-v8a/libuinjector.so",
-    [string]$renameTo="libinject.so"
+    [string]$ApkName = "com.tencent.tmgp.dpcq",
+    [string]$InjectLib = "prebuilt/arm64-v8a/libuinjector.so",
+    [string]$renameTo = "libinject.so"
 )
 
-if ($ApkName -eq "") {
-    Write-Host "Use: push.ps1 [ApkName] [InjectLib]"
+if ([string]::IsNullOrWhiteSpace($ApkName)) {
+    Write-Host "Usage: push.ps1 [-ApkName <package_name>] [-InjectLib <lib_path>] [-renameTo <target_name>]" -ForegroundColor Yellow
     exit 0
 }
 
-$tt = & adb shell su -c ls
-if ($null -eq $tt) {
-    $tt = ""
-} else {
-    $tt = " su -c "
-}
+Write-Host "Pushing inject library to $ApkName" -ForegroundColor Green
 
+# 检查 root 权限
+$tt = & adb shell su -c ls 2>$null
+$suPrefix = if ($null -eq $tt) { "" } else { " su -c " }
+
+# 获取包路径
 $path = & adb shell pm path $ApkName
-
-if ($path.Length -eq 0) {
+if ([string]::IsNullOrWhiteSpace($path)) {
     Write-Host "Package not found: $ApkName" -ForegroundColor Red
-    exit -1
+    exit 1
 }
 
+# 解析库路径
 $relPath = $path.Split(":")[1].Replace("base.apk", "lib")
+$arch = & adb shell $suPrefix ls $relPath
 
-$arch = & adb shell $tt ls $relPath
-
+# 根据架构调整库路径
 if ($arch -eq "arm") {
-    # replace local so path which will push
     $InjectLib = $InjectLib.Replace("arm64-v8a", "armeabi-v7a")
+    Write-Host "Detected ARM32 architecture" -ForegroundColor Yellow
+}
+else {
+    Write-Host "Detected architecture: $arch" -ForegroundColor Yellow
 }
 
-$libPath = $relPath + "/" + $arch
-Write-Host $libPath
+$libPath = "$relPath/$arch"
+Write-Host "Target library path: $libPath" -ForegroundColor Cyan
 
-# check file exist ? $InjectLib
+# 检查源文件是否存在
 if (!(Test-Path $InjectLib)) {
-    Write-Host "$InjectLib not found | Build it first" -ForegroundColor Red
-    exit -1
+    Write-Host "Inject library not found: $InjectLib" -ForegroundColor Red
+    Write-Host "Please build the project first" -ForegroundColor Yellow
+    exit 1
 }
 
-& adb push $InjectLib "/data/local/tmp/libinject.so"
-& adb shell $tt cp "/data/local/tmp/libinject.so" $($libPath + "/" + $renameTo)
-& adb shell $tt chmod 777 $($libPath + '/' + $renameTo)
+# 推送库文件
+Write-Host "Pushing $InjectLib..." -ForegroundColor Cyan
+& adb push $InjectLib "/data/local/tmp/$renameTo"
 
-Write-Host "libinject.so pushd" -ForegroundColor Green
+# 复制到目标目录
+& adb shell $suPrefix cp "/data/local/tmp/$renameTo" "$libPath/$renameTo"
+& adb shell $suPrefix chmod 777 "$libPath/$renameTo"
+
+# 验证
+$result = & adb shell ls -lh "$libPath/$renameTo" 2>$null
+if ([string]::IsNullOrWhiteSpace($result)) {
+    Write-Host "Failed to push library" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "`nLibrary pushed successfully!" -ForegroundColor Green
+Write-Host "Location: $libPath/$renameTo" -ForegroundColor Gray

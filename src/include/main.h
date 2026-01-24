@@ -44,8 +44,8 @@
 #define __MAIN__ __attribute__((constructor))
 #define __EXIT__ __attribute__((destructor))
 #define NORETURN __attribute__((noreturn))
-#define NOINLINE __attribute__((__noinline__))
-#define INLINE __attribute__((__inline__))
+#define NOINLINE __attribute__((noinline))
+#define INLINE inline
 #define likely(x) __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
 #define xASM(x) __asm __volatile__(x)
@@ -88,18 +88,18 @@ enum START_TYPE {
 };
 
 inline START_TYPE S_TYPE = UDEFINE;
-inline int SOCKET_PORT = 8024;
+inline int SOCKET_PORT = Config::SOCKET_PORT;
 
-inline JavaVM *g_jvm;
-inline JNIEnv *g_env;
-inline std::thread *g_thread = NULL;
-inline jobject g_application;
+inline JavaVM *g_jvm = nullptr;
+inline JNIEnv *g_env = nullptr;
+inline std::unique_ptr<std::thread> g_thread;
+inline jobject g_application = nullptr;
 
-inline lua_State *G_LUA;
+inline lua_State *G_LUA = nullptr;
 
 extern void reg_crash_handler();
 
-INLINE void init_kittyMemMgr();
+void init_kittyMemMgr();
 
 std::string getSelfPath();
 std::string getThreadName(pid_t id);

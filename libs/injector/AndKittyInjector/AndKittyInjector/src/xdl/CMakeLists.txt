@@ -4,7 +4,7 @@ project(xdl)
 file(GLOB XDL_SRC *.c)
 add_library(xdl STATIC ${XDL_SRC})
 target_compile_features(xdl PRIVATE c_std_17)
-target_compile_options(xdl PRIVATE -std=c17 -Weverything -Werror)
+target_compile_options(xdl PRIVATE -std=c17 -Wno-unsafe-buffer-usage -Wno-declaration-after-statement)
 target_include_directories(xdl PUBLIC include .)
 target_link_libraries(xdl log)
 
