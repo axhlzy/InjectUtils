@@ -70,22 +70,26 @@ void init() {
         throw std::runtime_error("Open linker failed");
 
     // get somain
-    addr_getSoName = xdl_dsym(handle, "__dl__ZNK6soinfo10get_sonameEv", NULL);
+    constexpr char *GET_SONAME_SYM = "__dl__ZNK6soinfo10get_sonameEv";
+    addr_getSoName = xdl_dsym(handle, GET_SONAME_SYM, NULL);
     using fn_get_soname = const char *(*)(soinfo *);
     if (addr_getSoName == nullptr)
-        throw std::runtime_error("linker : get_soname failed");
+        throw std::runtime_error(fmt::format("linker : get_soname failed ( {} )", GET_SONAME_SYM));
 
     // get soname
-    addr_get_somain = xdl_dsym(handle, "__dl__Z17solist_get_somainv", NULL);
+    constexpr char *GET_SOMAIN_SYM = "__dl__Z17solist_get_somainv";
+    addr_get_somain = xdl_dsym(handle, GET_SOMAIN_SYM, NULL);
     using fn_get_somain = soinfo *(*)(void);
     if (addr_get_somain == nullptr)
-        throw std::runtime_error("linker : get_somain failed");
+        throw std::runtime_error(fmt::format("linker : get_soname failed ( {} )", GET_SOMAIN_SYM));
 
     xdl_close(handle);
 }
 
 // __dl__Z17solist_get_somainv
 PTR get_somain() {
+    if (!addr_get_somain)
+        throw std::runtime_error("get_somain not available");
     using fn = PTR (*)(void);
     auto ret = reinterpret_cast<fn>(addr_get_somain)();
     console->warn("got [ soinfo* main ] -> {}", (void *)ret);
@@ -177,6 +181,12 @@ PTR get_somain() {
 
 void disp_soinfo_link() {
 
+    if (!addr_get_somain)
+        throw std::runtime_error(fmt::format("disp_soinfo_link not available [ {} ]", "addr_get_somain"));
+
+    if (!addr_getSoName)
+        throw std::runtime_error(fmt::format("disp_soinfo_link not available [ {} ]", "addr_get_soname"));
+
     void *handle = xdl_open(LINKERNAME, XDL_DEFAULT);
 
     auto info = reinterpret_cast<fn_get_somain>(addr_get_somain)();
@@ -199,6 +209,13 @@ void disp_soinfo_link() {
 }
 
 void disp_link_map_head() {
+
+    if (!addr_get_somain)
+        throw std::runtime_error(fmt::format("disp_soinfo_link not available [ {} ]", "addr_get_somain"));
+
+    if (!addr_getSoName)
+        throw std::runtime_error(fmt::format("disp_soinfo_link not available [ {} ]", "addr_get_soname"));
+
     auto info = reinterpret_cast<fn_get_somain>(addr_get_somain)();
     auto next = info->next;
 
@@ -371,7 +388,7 @@ std::string get_soinfo(const soinfo *info, const char *appendStart = "\t") {
 }
 
 std::string get_soinfo(PTR info) {
-    return get_soinfo((const soinfo *)info);
+    return get_soinfo(reinterpret_cast<const soinfo *>(info));
 }
 
 #include <fstream>
@@ -562,7 +579,15 @@ void test(PTR ptr, PTR info) {
 }
 
 BINDFUNC(linker) {
-    init();
+
+    try {
+        init();
+    } catch (const std::exception &e) {
+        // 由于这里可能不同的安卓版本没有这个函数导出，所以会导致这里可能抛异常
+        // 导致后续的有些功能无法使用（暂时没空做适配）
+        std::cerr << e.what() << '\n';
+    }
+
     luabridge::getGlobalNamespace(L)
         .beginNamespace("linker")
         .addFunction("somain", &get_somain)

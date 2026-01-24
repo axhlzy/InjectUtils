@@ -1,10 +1,7 @@
 #include "KittyMemoryMgr.hpp"
 #include "bindings.h"
 #include "magic_enum.hpp"
-#include <LIEF/LIEF.hpp>
 #include <cxxabi.h>
-
-using namespace LIEF;
 
 extern KittyMemoryMgr kittyMemMgr;
 

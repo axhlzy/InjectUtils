@@ -15,8 +15,13 @@ elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
     set(LIEF_PROJECT ${LIEF_DOWNLOAD_DIR}/LIEF-${LIEF_TAG}-Android-aarch64)
 endif()
 
+# execute_process(
+#     COMMAND powershell -ExecutionPolicy Bypass -File ${CMAKE_CURRENT_SOURCE_DIR}/download.ps1 -TagName ${LIEF_TAG}
+#     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+# ) 
+
 execute_process(
-    COMMAND powershell -ExecutionPolicy Bypass -File ${CMAKE_CURRENT_SOURCE_DIR}/download.ps1 -TagName ${LIEF_TAG}
+    COMMAND pwsh ${CMAKE_CURRENT_SOURCE_DIR}/download.ps1 -TagName ${LIEF_TAG}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 ) 
 
