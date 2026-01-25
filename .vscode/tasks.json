@@ -59,7 +59,7 @@
             "command": "adb",
             "args": [
                 "push",
-                "build/arm64-v8a/UnityInjector",
+                "prebuilt/arm64-v8a/uinjector",
                 "/data/local/tmp"
             ]
         },
@@ -74,26 +74,58 @@
                 "shell",
                 "chmod",
                 "+x",
-                "/data/local/tmp/UnityInjector"
+                "/data/local/tmp/uinjector"
             ]
         },
         {
             "type": "shell",
+            "label": "deploy",
+            "detail": "Deploy binary to device (push + chmod)",
+            "isBackground": false,
+            "group": {
+                "kind": "test",
+                "isDefault": false
+            },
+            "dependsOn": [
+                "push",
+                "chmod"
+            ],
+            "dependsOrder": "sequence",
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "build-and-deploy",
+            "detail": "Build and deploy binary to device",
+            "isBackground": false,
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "dependsOn": [
+                "generate",
+                "deploy"
+            ],
+            "dependsOrder": "sequence",
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
             "label": "run",
-            "detail": "run binary",
+            "detail": "Build, deploy and run binary on device",
             "isBackground": false,
             "group": "test",
             "command": "adb",
             "args": [
                 "shell",
-                "/data/local/tmp/UnityInjector"
+                "/data/local/tmp/uinjector"
             ],
             "dependsOn": [
                 "generate",
-                "push",
-                "chmod"
+                "deploy"
             ],
-            "dependsOrder": "sequence"
+            "dependsOrder": "sequence",
+            "problemMatcher": []
         },
         {
             "type": "cppbuild",

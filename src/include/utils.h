@@ -9,7 +9,7 @@ class Trace;
 #define TRACE_FUNCTION Trace trace(__PRETTY_FUNCTION__);
 
 void dumpMemToFile(const void *start_addr, size_t size, const char *file_name);
-char *addr2name(void *addr);
+const char *addr2name(void *addr);
 std::string hexdump(const void *data, std::size_t size = 0x20);
 #define HEXLOG(ptr, len) logd("%s", hexdump(ptr, len).c_str())
 

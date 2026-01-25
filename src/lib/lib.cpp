@@ -32,27 +32,60 @@ std::vector<std::string> getLuaCommands(lua_State *L = G_LUA) {
   return functionNames;
 }
 
-// run on remote
+// run on remote (在目标应用进程中运行)
 void repl_socket(lua_State *L) {
-  logd("[*] start lua repl | Socket Mode | %d", SOCKET_PORT);
+  logd("[*] start lua repl | Socket Mode | Port: %d", SOCKET_PORT);
+  console->info("[*] Starting Lua REPL Server on port {}", SOCKET_PORT);
+  
   try {
     boost::asio::io_context io_context;
     LuaReplServer server(io_context, SOCKET_PORT, L);
+    
+    console->info("[*] Server started successfully, waiting for connections...");
+    logd("[*] Server started successfully on port %d", SOCKET_PORT);
+    
     io_context.run();
+  } catch (const boost::system::system_error &e) {
+    std::string error_msg = fmt::format("[!] Socket error: {} (code: {})", 
+                                        e.what(), e.code().value());
+    console->error("{}", error_msg);
+    loge("%s", error_msg.c_str());
+    
+    // 检查常见错误
+    if (e.code().value() == 98) { // EADDRINUSE
+      console->error("[!] Port {} is already in use", SOCKET_PORT);
+      loge("[!] Port %d is already in use. Try: netstat -tuln | grep %d", 
+           SOCKET_PORT, SOCKET_PORT);
+    } else if (e.code().value() == 13) { // EACCES
+      console->error("[!] Permission denied. Need root?");
+      loge("[!] Permission denied to bind port %d", SOCKET_PORT);
+    }
   } catch (const std::exception &e) {
-    std::cerr << e.what() << '\n';
+    std::string error_msg = fmt::format("[!] Server error: {}", e.what());
+    console->error("{}", error_msg);
+    loge("%s", error_msg.c_str());
   }
 }
 
-// run on local
 void start_local_repl() {
+  console->info("[*] Starting local REPL client, connecting to port {}", SOCKET_PORT);
+  logd("[*] Connecting to localhost:%d", SOCKET_PORT);
+  
   LuaReplClient client(std::to_string(SOCKET_PORT));
-  client.connect();
-  // todo getLuaCommands() mem sync with remote process
+  
+  // 使用改进的连接方法，支持重试和超时
+  if (!client.connect(30, 1000)) {  // 30次重试，每次间隔1秒
+    console->error("[!] Failed to connect to server");
+    return;
+  }
+  
+  console->info("[*] Connected! Type Lua commands or 'exit' to quit");
+
   installRepl({""}, [&](const std::string &input) {
     if (input == "exit" || input == "q") {
-      client.close_connect();
-    } else {
+      console->info("[*] Closing connection...");
+      client.disconnect();
+    } else if (!input.empty()) {
       client.send_message(input);
     }
   });

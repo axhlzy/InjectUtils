@@ -9,8 +9,9 @@ KittyMemoryMgr kittyMemMgr;
 
 void init_kittyMemMgr() {
     if (!kittyMemMgr.initialize(getpid(), EK_MEM_OP_IO, true)) {
-        loge("KittyMemoryMgr initialize Error occurred )':");
-        console->info("KittyMemoryMgr initialize Error occurred )':");
+        const char* msg = "KittyMemoryMgr initialize Error occurred )':";
+        loge("%s", msg);
+        console->info("{}", msg);
         return;
     }
 }
@@ -48,7 +49,6 @@ void showRegs(ucontext_t *ucontext) {
         ctx.arm_ip, ctx.arm_sp, ctx.arm_lr, ctx.arm_pc);
 #endif
 
-    loge("%s", output.c_str());
     console->info("{}", output);
 }
 
@@ -66,8 +66,7 @@ void reg_crash_handler() {
 #if USE_SIGNAL
     static sighandler_t segfault_handler = *[](int signum) {
         auto signStr = magic_enum::enum_name((SignalE)signum);
-        loge("[-] Caught signal | signum : %d | %s \n", signum, signStr.data());
-        console->error("Caught signal | signum : {} | {}", signum, signStr);
+        console->error("[-] Caught signal | signum : {} | {}", signum, signStr);
         signal(SIGSEGV, segfault_handler);
         longjmp(recover, 1);
     };
@@ -75,17 +74,15 @@ void reg_crash_handler() {
 #else
     static auto signal_handler = [](int signum, siginfo_t *info, void *context) {
         auto signStr = magic_enum::enum_name<SignalE>((SignalE)signum);
-        auto msg = fmt::format("[-] Caught signal | signum : {} [ {} ] | siginfo_t : {} | context : {}\n", signum, signStr, info->si_addr, context);
-        loge("%s", msg.c_str());
-        console->error("{}", msg);
+        console->error("[-] Caught signal | signum : {} [ {} ] | siginfo_t : {:p} | context : {:p}", 
+                      signum, signStr, info->si_addr, context);
+        
         // extract register values
         auto ucontext = (ucontext_t *)context;
         auto ctx = ucontext->uc_mcontext;
 
         // fault_address
-        loge("[-] fault_address: %p\n", ctx.fault_address);
-        console->error("fault_address: {:p}", ctx.fault_address);
-        // UnwindBacktrace();
+        console->error("[-] fault_address: {:#x}", static_cast<uint64_t>(ctx.fault_address));
 
         showRegs(ucontext);
 
@@ -100,13 +97,11 @@ void reg_crash_handler() {
 #endif
 
     if (setjmp(recover) == 0) {
-        logd("[*] Lua VM started\n");
         // get current sp ptr
         asm volatile("mov %0, sp" : "=r"(sp));
-        console->info("Lua VM started | sp: {}", sp);
+        console->info("[*] Lua VM started | sp: {:p}", sp);
     } else {
-        loge("[-] Lua VM crashed and restart now\n");
-        console->error("Lua VM crashed and restart now | sp: {}", sp);
+        console->error("[-] Lua VM crashed and restart now | sp: {:p}", sp);
         // set sp
         asm volatile("mov sp, %0" : : "r"(sp));
         // set lr = initVM
@@ -175,92 +170,49 @@ std::string getThreadName(pid_t tid) {
     return threadName;
 }
 
-class Timer {
-public:
-    Timer(const std::string &funcName) : m_funcName(funcName), m_start(std::chrono::high_resolution_clock::now()) {}
-
-    ~Timer() {
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - m_start).count();
-        std::cout << m_funcName << " took " << duration << " microseconds" << std::endl;
-    }
-
-private:
-    std::string m_funcName;
-    std::chrono::high_resolution_clock::time_point m_start;
-};
-
-class ScopedLock {
-public:
-    ScopedLock(std::mutex &m) : mutex(m) {
-        mutex.lock();
-    }
-
-    ~ScopedLock() {
-        mutex.unlock();
-    }
-
-private:
-    std::mutex &mutex;
-};
-
-class Trace {
-public:
-    Trace(const std::string &funcName) : m_funcName(funcName) {
-        std::cout << "Entering: " << m_funcName << std::endl;
-    }
-
-    ~Trace() {
-        std::cout << "Exiting: " << m_funcName << std::endl;
-    }
-
-private:
-    std::string m_funcName;
-};
-
 KittyInjector kitInjector;
 std::chrono::duration<double, std::milli> inj_ms{};
 void inject(pid_t pid) {
     string lib = getSelfPath();
     bool use_memfd = false, hide_maps = true, hide_solist = false, stopped = false;
-    injected_info_t ret{};
-    if (kitInjector.init(pid, EK_MEM_OP_IO)) {
-        if (!kitInjector.attach()) {
-            console->error("KittyInjector attach failed");
-            exit(-1);
-        }
-        // auto tm_start = std::chrono::high_resolution_clock::now();
-        ret = kitInjector.injectLibrary(lib, RTLD_NOW | RTLD_LOCAL, use_memfd, hide_maps, hide_solist,
-                                        [&pid, &stopped](injected_info_t &injected) {
-                                            if (injected.is_valid() && stopped) {
-                                                console->info("[*] Continuing target process...");
-                                                kill(pid, SIGCONT);
-                                                stopped = false;
-                                            }
-                                        });
-
-        // inj_ms = std::chrono::high_resolution_clock::now() - tm_start;
-        // if (inj_ms.count() > 0)
-        //     console->info("[*] Injection took {} MS.", inj_ms.count());
-        kitInjector.detach();
+    
+    if (!kitInjector.init(pid, EK_MEM_OP_IO)) {
+        console->error("KittyInjector init failed");
+        return;
     }
+    
+    if (!kitInjector.attach()) {
+        console->error("KittyInjector attach failed");
+        exit(-1);
+    }
+    
+    console->info("[*] Injecting library into process {}...", pid);
+    
+    kitInjector.injectLibrary(lib, RTLD_NOW | RTLD_LOCAL, use_memfd, hide_maps, hide_solist,
+                              [&pid, &stopped](injected_info_t &injected) {
+                                  if (injected.is_valid() && stopped) {
+                                      console->info("[*] Continuing target process...");
+                                      kill(pid, SIGCONT);
+                                      stopped = false;
+                                  }
+                              });
+    
+    kitInjector.detach();
+    
+    // 等待服务器启动
+    console->info("[*] Waiting for server to initialize...");
+    std::this_thread::sleep_for(std::chrono::milliseconds(1500));
 }
 
 void checkIl2cpp() {
-    std::function<bool()> const static checkIl2cppLoaded = []() -> bool {
+    static auto checkIl2cppLoaded = []() -> bool {
         void *handle = xdl_open("libil2cpp.so", XDL_DEFAULT);
-        if (handle != nullptr) {
-            return true;
-        } else {
-            return false;
-        };
+        return handle != nullptr;
     };
 
     static std::thread t([]() {
         pthread_setname_np(pthread_self(), "dohook");
-        while (true) {
-            if (checkIl2cppLoaded())
-                return;
+        while (!checkIl2cppLoaded()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     });
@@ -268,14 +220,12 @@ void checkIl2cpp() {
 }
 
 void set_selinux_state(bool status) {
-    std::string command = "setenforce ";
-    command += status ? "1" : "0";
+    std::string command = status ? "setenforce 1" : "setenforce 0";
     int result = std::system(command.c_str());
     if (result != 0) {
         throw std::runtime_error("Failed to set SELinux state: " + std::to_string(result));
-    } else {
-        std::cout << "Successfully set SELinux to " << (status ? "enforcing" : "permissive") << " mode." << std::endl;
     }
+    console->info("Successfully set SELinux to {} mode", status ? "enforcing" : "permissive");
 }
 
 void dumpMemToFile(const void *start_addr, size_t size, const char *file_name) {
@@ -294,7 +244,7 @@ void dumpMemToFile(const void *start_addr, size_t size, const char *file_name) {
         perror("fclose");
     }
 
-    logd("Dumped %zu bytes to %s", size, file_name);
+    console->info("Dumped {} bytes to {}", size, file_name);
 }
 
 string hexdump(const void *data, std::size_t size) {
@@ -321,26 +271,27 @@ string hexdump(const void *data, std::size_t size) {
     return oss.str();
 }
 
-char *addr2name(void *addr) {
+const char *addr2name(void *addr) {
+    static const char* empty = "";
     if (addr == nullptr)
-        return "";
-    const char *symbol = "";
-    string libname = "NULL";
-    uintptr_t offset = 0;
+        return empty;
+    
     xdl_info_t info;
     if (xdl_addr(addr, &info, NULL)) {
-        symbol = info.dli_sname;
-        auto libname_string = string(info.dli_fname);
+        const char *symbol = info.dli_sname ? info.dli_sname : "";
+        string libname_string = info.dli_fname;
+        string libname;
+        
         if (libname_string.find("/data/app/") != string::npos) {
-            libname = libname_string.substr(libname_string.find_last_of('/') + 1).c_str();
+            libname = libname_string.substr(libname_string.find_last_of('/') + 1);
         } else {
             libname = info.dli_fname;
         }
-        offset = (char *)addr - (char *)info.dli_fbase;
+        
+        uintptr_t offset = (char *)addr - (char *)info.dli_fbase;
         return strdup((libname + " @ " + std::to_string(offset) + " | " + symbol).c_str());
-    } else {
-        return "";
     }
+    return empty;
 }
 
 class Semaphore {
