@@ -173,7 +173,7 @@ std::string getThreadName(pid_t tid) {
 KittyInjector kitInjector;
 std::chrono::duration<double, std::milli> inj_ms{};
 void inject(pid_t pid) {
-    string lib = getSelfPath();
+    const string lib = getSelfPath();
     bool use_memfd = false, hide_maps = true, hide_solist = false, stopped = false;
     
     if (!kitInjector.init(pid, EK_MEM_OP_IO)) {
@@ -198,8 +198,7 @@ void inject(pid_t pid) {
                               });
     
     kitInjector.detach();
-    
-    // 等待服务器启动
+
     console->info("[*] Waiting for server to initialize...");
     std::this_thread::sleep_for(std::chrono::milliseconds(1500));
 }

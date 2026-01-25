@@ -94,3 +94,7 @@ target_link_libraries(${PROJECT_NAME} INTERFACE libs_network)
 set(LIB_NETWORK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/crc)
 add_subdirectory(${LIB_NETWORK_DIR})
 target_link_libraries(${PROJECT_NAME} INTERFACE lib_crc)
+
+# dexter (Google's .dex manipulation library)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/dexter)
+target_link_libraries(${PROJECT_NAME} INTERFACE slicer)

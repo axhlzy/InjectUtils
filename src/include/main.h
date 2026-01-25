@@ -21,6 +21,7 @@
 #include <thread>
 #include <unistd.h>
 #include <vector>
+#include <jvmti.h>
 
 #ifdef __linux__
 #include <dlfcn.h>
@@ -94,8 +95,12 @@ inline JavaVM *g_jvm = nullptr;
 inline JNIEnv *g_env = nullptr;
 inline std::unique_ptr<std::thread> g_thread;
 inline jobject g_application = nullptr;
+inline jobject g_classLoader = nullptr;  // 全局 Application ClassLoader
 
 inline lua_State *G_LUA = nullptr;
+
+// 获取全局 JVMTI 环境（在 lib.cpp 中定义）
+extern jvmtiEnv* GetGlobalJvmtiEnv();
 
 extern void reg_crash_handler();
 

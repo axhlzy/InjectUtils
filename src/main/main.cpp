@@ -1,75 +1,96 @@
 #include "main.h"
 #include "cxxopts.hpp"
 #include "fmt/format.h"
+#include "repl_manager.h"
 #include <KittyMemoryEx.hpp>
 #include <stacktrace.h>
 #include <utils.h>
 
-extern void start_local_repl();
+static void printUsage(const cxxopts::Options &options) {
+    std::cout << options.help() << std::endl;
+}
+
+static pid_t getPidFromInput(const std::string &input) {
+    // 如果是纯数字，直接作为 PID
+    if (std::all_of(input.begin(), input.end(), ::isdigit)) {
+        return std::stoi(input);
+    }
+    
+    // 否则作为包名查找 PID
+    pid_t pid = KittyMemoryEx::getProcessID(input);
+    if (pid == 0) {
+        throw std::runtime_error(
+            fmt::format("Failed to get PID for package: {}", input));
+    }
+    
+    std::cout << "Retrieved PID for package '" << input << "': " << pid << std::endl;
+    return pid;
+}
+
+static bool isProcessRunning(pid_t pid) {
+    if (kill(pid, SIG_BLOCK) == 0) {
+        std::cout << "Process found with PID: " << pid << std::endl;
+        return true;
+    }
+    
+    std::cerr << "No process found with PID: " << pid << std::endl;
+    return false;
+}
+
+static int handleDebugMode() {
+    JNI_OnLoad(nullptr, nullptr);
+    return 0;
+}
+
+static int handleInjectMode(const std::string &pidOrPackage) {
+    init_kittyMemMgr();
+    
+    try {
+        pid_t pid = getPidFromInput(pidOrPackage);
+        
+        if (!isProcessRunning(pid)) {
+            return 1;
+        }
+        
+        inject(pid);
+        startReplClient();
+        
+    } catch (const std::exception &e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
+    }
+    
+    return 0;
+}
 
 int main(int argc, char *argv[]) {
     try {
         cxxopts::Options options(argv[0], "Inject-Utils");
-        options.add_options()("h,help", "Print help")("d,debug", "Start in debug mode")("r,restart", "restart app")("c,clear", "clear app")("p,pid", "PID or package name", cxxopts::value<std::string>());
+        options.add_options()
+            ("h,help", "Print help")
+            ("d,debug", "Start in debug mode")
+            ("r,restart", "Restart app")
+            ("c,clear", "Clear app")
+            ("p,pid", "PID or package name", cxxopts::value<std::string>());
 
         auto result = options.parse(argc, argv);
 
         if (result.count("help")) {
-            std::cout << options.help() << std::endl;
+            printUsage(options);
             return 0;
         }
 
-        if (result.count("debug") || result.count("d")) {
-            JNI_OnLoad(nullptr, nullptr);
-            return 0;
+        if (result.count("debug")) {
+            return handleDebugMode();
         }
 
-        if (result.count("pid") || result.count("p")) {
-            // set_selinux_state(false);
-            init_kittyMemMgr();
-
-            auto pid_or_package = result["pid"].as<std::string>();
-
-            pid_t pid = 0;
-
-            try {
-                if (std::all_of(pid_or_package.begin(), pid_or_package.end(), ::isdigit)) {
-                    pid = std::stoi(pid_or_package);
-                    std::cout << "PID provided: " << pid << std::endl;
-                    if (result.count("clear") || result.count("restart")) {
-                        std::cout << "Warning: --clear or --restart options are not supported with PID" << std::endl;
-                    }
-                } else {
-                    const auto pkg_name = pid_or_package;
-                    std::cout << "Package name provided: " << pid_or_package << std::endl;
-                    pid = KittyMemoryEx::getProcessID(pid_or_package);
-                    if (pid == 0) {
-                        throw std::runtime_error(fmt::format("Failed to get PID for package: {}", pkg_name));
-                    }
-                    std::cout << "Retrieved PID for package: " << pid << std::endl;
-                }
-            } catch (const std::exception &e) {
-                std::cerr << e.what() << std::endl;
-                return 1;
-            }
-
-            if (pid != 0) {
-                if (kill(pid, SIG_BLOCK) == 0) {
-                    std::cout << "Process found with PID: " << pid << std::endl;
-                    inject(pid);
-                    start_local_repl();
-                } else {
-                    std::cerr << "No process found with PID: " << pid << std::endl;
-                    return 1;
-                }
-            } else {
-                std::cerr << "Failed to get PID for the given input." << std::endl;
-                return 1;
-            }
-        } else {
-            std::cout << options.help() << std::endl;
-            return 1;
+        if (result.count("pid")) {
+            std::string pidOrPackage = result["pid"].as<std::string>();
+            return handleInjectMode(pidOrPackage);
         }
+
+        printUsage(options);
+        return 1;
 
     } catch (const cxxopts::exceptions::exception &e) {
         std::cerr << "Error parsing options: " << e.what() << std::endl;

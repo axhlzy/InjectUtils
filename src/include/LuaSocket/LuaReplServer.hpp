@@ -191,7 +191,9 @@ private:
                 size_t len = session->socket_ptr->read_some(boost::asio::buffer(buffer), error);
                 
                 if (error == boost::asio::error::eof) {
-                    std::cout << fmt::format("[*] Client {} disconnected", session->id) << std::endl;
+                    std::string disconnect_msg = fmt::format("[*] Client {} disconnected", session->id);
+                    std::cout << disconnect_msg << std::endl;
+                    logd("%s", disconnect_msg.c_str());
                     break;
                 } else if (error) {
                     throw boost::system::system_error(error);
@@ -253,9 +255,13 @@ private:
             lua_pushnil(main_lua_state_);
             lua_setfield(main_lua_state_, LUA_REGISTRYINDEX, ref_key.c_str());
             
-            std::cout << fmt::format("[*] Client {} cleaned up", session->id) << std::endl;
+            std::string cleanup_msg = fmt::format("[*] Client {} session closed and cleaned up", session->id);
+            std::cout << cleanup_msg << std::endl;
+            logd("%s", cleanup_msg.c_str());
         } catch (const std::exception& e) {
-            std::cerr << fmt::format("[!] Cleanup error for client {}: {}", session->id, e.what()) << std::endl;
+            std::string error_msg = fmt::format("[!] Cleanup error for client {}: {}", session->id, e.what());
+            std::cerr << error_msg << std::endl;
+            loge("%s", error_msg.c_str());
         }
     }
 
