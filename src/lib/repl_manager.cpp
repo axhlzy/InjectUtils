@@ -35,19 +35,13 @@ void startReplSocket(lua_State *L) {
     try {
         boost::asio::io_context io_context;
         LuaReplServer server(io_context, SOCKET_PORT, L);
-
-        console->info("[*] Server started successfully, waiting for connections...");
-        logd("[*] Server started successfully on port %d", SOCKET_PORT);
-
         io_context.run();
-        
     } catch (const boost::system::system_error &e) {
         std::string error_msg = fmt::format(
             "[!] Socket error: {} (code: {})", e.what(), e.code().value());
         console->error("{}", error_msg);
         loge("%s", error_msg.c_str());
 
-        // 检查常见错误
         if (e.code().value() == 98) {  // EADDRINUSE
             console->error("[!] Port {} is already in use", SOCKET_PORT);
             loge("[!] Port %d is already in use. Try: netstat -tuln | grep %d",
@@ -56,7 +50,7 @@ void startReplSocket(lua_State *L) {
             console->error("[!] Permission denied. Need root?");
             loge("[!] Permission denied to bind port %d", SOCKET_PORT);
         }
-        
+
     } catch (const std::exception &e) {
         std::string error_msg = fmt::format("[!] Server error: {}", e.what());
         console->error("{}", error_msg);

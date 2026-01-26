@@ -133,6 +133,7 @@ void parseInfo(void *handle) {
     xdl_info(handle, XDL_DI_DLINFO, &info);
     xdl_close(handle);
     console->info("\n{}", XdlInfoToString(&info));
+    logd("\n%s", XdlInfoToString(&info));
 }
 
 // private

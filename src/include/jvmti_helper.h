@@ -14,6 +14,28 @@
 extern jvmtiEnv* g_jvmti_env;
 
 /**
+ * 堆栈打印模式
+ */
+enum StackTraceMode {
+    STACK_TRACE_NATIVE = 0,  // 打印 Native 堆栈
+    STACK_TRACE_JAVA = 1,    // 打印 Java 堆栈
+    STACK_TRACE_BOTH = 2,     // 同时打印两种堆栈
+    STACK_TRACE_NULL = 3     // 同时打印两种堆栈
+};
+
+/**
+ * 设置异常回调的堆栈打印模式
+ * @param mode 堆栈打印模式
+ */
+void SetStackTraceMode(StackTraceMode mode);
+
+/**
+ * 获取当前的堆栈打印模式
+ * @return 当前的堆栈打印模式
+ */
+StackTraceMode GetStackTraceMode();
+
+/**
  * 获取全局 JVMTI 环境
  * @return jvmtiEnv 指针，如果未初始化则返回 nullptr
  */

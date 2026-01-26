@@ -1,6 +1,7 @@
 build
 cmake-build*
 example*
+*.md
 .vscode/sftp.json
 .vscode/c_cpp_properties.json
 plugins/android/art/*

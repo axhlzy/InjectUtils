@@ -14,6 +14,28 @@ if (USE_FRIDA_GUM)
     add_definitions(-DUSE_FRIDA_GUM)
 endif()
 
+add_definitions(-DDEBUG_DEX_FILE)
+
+# 在配置阶段调用 build.ps1 生成 DEX 头文件
+set(BUILD_DEX_SCRIPT ${CMAKE_SOURCE_DIR}/shell/bin2h/build.ps1)
+set(GENERATED_DIR ${CMAKE_SOURCE_DIR}/src/generated)
+
+message(STATUS "Executing build.ps1 to generate DEX headers...")
+execute_process(
+    COMMAND powershell -ExecutionPolicy Bypass -File ${BUILD_DEX_SCRIPT}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    RESULT_VARIABLE BUILD_DEX_RESULT
+    OUTPUT_VARIABLE BUILD_DEX_OUTPUT
+    ERROR_VARIABLE BUILD_DEX_ERROR
+)
+
+if(BUILD_DEX_RESULT EQUAL 0)
+    message(STATUS "DEX headers generated successfully")
+    message(STATUS "${BUILD_DEX_OUTPUT}")
+else()
+    message(WARNING "Failed to generate DEX headers: ${BUILD_DEX_ERROR}")
+endif()
+
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     add_definitions(-DDEBUG_PROJECT)
 endif()
@@ -101,7 +123,7 @@ endif()
 target_link_libraries(${LIB_DEPENDENCIES} INTERFACE ${LINK_LIBS})
 set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/src/include)
 file(GLOB_RECURSE HEADERS ${INCLUDE_DIR}/*.h ${INCLUDE_DIR}/*.hpp)
-target_include_directories(${LIB_DEPENDENCIES} INTERFACE ${HEADERS})
+target_include_directories(${LIB_DEPENDENCIES} INTERFACE ${HEADERS} ${GENERATED_DIR})
 
 # binds
 file(GLOB_RECURSE BINDS ${CMAKE_SOURCE_DIR}/src/binds/*.cpp)
@@ -113,7 +135,7 @@ list(APPEND SOURCES ${BINDS} ${LIBDIR})
 set(LIB_NAME ${PROJECT_NAME}_lib)
 add_library(${LIB_NAME} SHARED ${SOURCES})
 target_link_libraries(${LIB_NAME} ${LIB_DEPENDENCIES})
-target_include_directories(${LIB_NAME} PRIVATE ${INCLUDE_DIR})
+target_include_directories(${LIB_NAME} PRIVATE ${INCLUDE_DIR} ${GENERATED_DIR})
 # rename lib${PROJECT_NAME}_lib.so -> lib${PROJECT_NAME}.so
 add_custom_command(TARGET ${LIB_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E rename
@@ -137,7 +159,7 @@ endif()
 # gen executable (injector built in)
 add_executable(${PROJECT_NAME} ${EXEC_SRC} ${SOURCES})
 target_link_libraries(${PROJECT_NAME} ${LIB_DEPENDENCIES})
-target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIR})
+target_include_directories(${PROJECT_NAME} PRIVATE ${INCLUDE_DIR} ${GENERATED_DIR})
 
 target_compile_options(${PROJECT_NAME} PRIVATE -fvisibility=default)
 target_link_options(${PROJECT_NAME} PRIVATE -Wl,-E)
