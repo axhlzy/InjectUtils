@@ -13,3 +13,4 @@ plugins/android/libraries/*
 prebuilt/arm64-v8a
 prebuilt/armeabi-v7a
 prebuilt/dump/*.so
+libs/dexter
