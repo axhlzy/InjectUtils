@@ -592,7 +592,7 @@ file(GLOB_RECURSE INDENT_FILES
 )
 
 set(include_dir ${PROJECT_SOURCE_DIR}/single_include/nlohmann)
-set(tool_dir ${PROJECT_SOURCE_DIR}/tools/amalgamate)
+set(tool_dir ../../../../tools/amalgamate)
 add_custom_target(ci_test_amalgamation
     COMMAND rm -fr ${include_dir}/json.hpp~ ${include_dir}/json_fwd.hpp~
     COMMAND cp ${include_dir}/json.hpp ${include_dir}/json.hpp~

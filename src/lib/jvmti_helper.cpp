@@ -1,5 +1,5 @@
 #include "jvmti_helper.h"
-#include "stacktrace_helper.h"
+#include "stacktrace.h"
 #include "log.h"
 #include "xdl.h"
 #include "art/art_method.h"

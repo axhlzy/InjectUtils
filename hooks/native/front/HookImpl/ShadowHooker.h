@@ -7,46 +7,74 @@
 
 #include "HookBase/HookBase.hpp"
 
+/**
+ * @brief ShadowHook 实现
+ * 
+ * 基于 ShadowHook 框架的 Hook 实现
+ */
 class ShadowHooker : public HookBase {
-
-private:
 public:
+    /**
+     * @brief 注册 Hook（模板版本）
+     */
     template <typename... Args>
-    MACRO_HIDE_SYMBOL static int registerHook(void *mPtr, HookType type, FuncType<Args...> replaceFunction = nullptr) {
-        if (mPtr == nullptr)
+    MACRO_HIDE_SYMBOL 
+    static int registerHook(void *mPtr, HookType type, FuncType<Args...> replaceFunction = nullptr) {
+        if (mPtr == nullptr) {
+            loge("ShadowHooker::registerHook: nullptr provided");
             return -1;
+        }
         return registerHook(mPtr, type, reinterpret_cast<void *>(replaceFunction));
     }
 
-    MACRO_HIDE_SYMBOL static int registerHook(void *mPtr, HookType type, void *replaceFunction = nullptr) {
-
-        if (mPtr == nullptr)
+    /**
+     * @brief 注册 Hook（通用版本）
+     */
+    MACRO_HIDE_SYMBOL 
+    static int registerHook(void *mPtr, HookType type, void *replaceFunction = nullptr) {
+        if (mPtr == nullptr) {
+            loge("ShadowHooker::registerHook: nullptr provided");
             return -1;
+        }
+        
         auto target = reinterpret_cast<void *>(mPtr);
-        int status = 1;
-        void *pVoid = reinterpret_cast<void *>(replaceFunction);
-        void *replaceFunc = (void *)(pVoid);
         void *srcCall = nullptr;
 
         switch (type) {
         case HookType::HOOK_DEFAULT:
-            if (replaceFunc == nullptr)
-                break;
-            shadowhook_hook_func_addr(target, replaceFunc, &srcCall);
+            if (replaceFunction == nullptr) {
+                loge("ShadowHooker::registerHook: replaceFunction is nullptr for HOOK_DEFAULT");
+                return -1;
+            }
+            if (shadowhook_hook_func_addr(target, replaceFunction, &srcCall) != 0) {
+                loge("ShadowHooker::registerHook: shadowhook_hook_func_addr failed");
+                return -1;
+            }
             break;
+            
         case HookType::HOOK_RET_NOP_0:
-            shadowhook_hook_func_addr(target, function_ret_0, nullptr);
+            if (shadowhook_hook_func_addr(target, function_ret_0, nullptr) != 0) {
+                loge("ShadowHooker::registerHook: shadowhook_hook_func_addr failed for HOOK_RET_NOP_0");
+                return -1;
+            }
             break;
+            
         case HookType::HOOK_RET_NOP_1:
-            shadowhook_hook_func_addr(target, function_ret_1, nullptr);
+            if (shadowhook_hook_func_addr(target, function_ret_1, nullptr) != 0) {
+                loge("ShadowHooker::registerHook: shadowhook_hook_func_addr failed for HOOK_RET_NOP_1");
+                return -1;
+            }
             break;
+            
         default:
-            loge("Unknown HookType: %p", type);
-            break;
+            loge("ShadowHooker::registerHook: Unknown HookType %d", static_cast<int>(type));
+            return -1;
         }
-        voidInfoCache.insert(std::pair<void *, dobby_dummy_func_t>((void *)mPtr, srcCall));
-        return status;
-    };
+        
+        // 插入缓存
+        insertCache(mPtr, srcCall);
+        return 0;
+    }
 };
 
 #endif // IL2CPPHOOKER_SHADOWHOOKER_H

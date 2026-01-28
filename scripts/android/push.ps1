@@ -4,7 +4,7 @@
 
 param (
     [string]$ApkName = "com.tencent.tmgp.dpcq",
-    [string]$InjectLib = "prebuilt/arm64-v8a/libuinjector.so",
+    [string]$InjectLib = "../../prebuilt/arm64-v8a/libuinjector.so",
     [string]$renameTo = "libinject.so"
 )
 

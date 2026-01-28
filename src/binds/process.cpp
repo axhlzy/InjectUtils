@@ -242,7 +242,7 @@ void hook_start_thread() {
         auto tid = type.get_property("tid").get_value(arg).get_value<pid_t>();
         auto start_routine = type.get_property("start_routine").get_value(arg).get_value<void *>();
         auto maps = KittyMemoryEx::getAddressMap(pid, (uintptr_t)start_routine);
-        string ext = maps.toString();
+        std::string ext = maps.toString();
 
         // #if USE_XDL
         //         xdl_info_t info = {0};

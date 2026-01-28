@@ -17,7 +17,7 @@ endif()
 add_definitions(-DDEBUG_DEX_FILE)
 
 # 在配置阶段调用 build.ps1 生成 DEX 头文件
-set(BUILD_DEX_SCRIPT ${CMAKE_SOURCE_DIR}/shell/bin2h/build.ps1)
+set(BUILD_DEX_SCRIPT ${CMAKE_SOURCE_DIR}/scripts/build/bin2h/build.ps1)
 set(GENERATED_DIR ${CMAKE_SOURCE_DIR}/src/generated)
 
 message(STATUS "Executing build.ps1 to generate DEX headers...")
@@ -37,8 +37,8 @@ else()
 endif()
 
 # 生成 Lua 函数列表用于 REPL 自动补全
-set(EXTRACT_LUA_SCRIPT ${CMAKE_SOURCE_DIR}/tools/extract_lua_functions.py)
-set(LUA_FUNCTION_HEADER ${CMAKE_SOURCE_DIR}/src/include/lua_function_list.h)
+set(EXTRACT_LUA_SCRIPT ${CMAKE_SOURCE_DIR}/scripts/build/extract_lua_functions.py)
+set(LUA_FUNCTION_HEADER ${CMAKE_SOURCE_DIR}/src/generated/lua_function_list.h)
 
 message(STATUS "Extracting Lua functions for REPL autocomplete...")
 execute_process(
@@ -127,7 +127,7 @@ list(APPEND LINK_LIBS libs)
 set(CMAKE_C_FLAGS "${SAVED_CMAKE_C_FLAGS}")
 set(CMAKE_CXX_FLAGS "${SAVED_CMAKE_CXX_FLAGS}")
 
-add_subdirectory(tools)
+add_subdirectory(libs/tools)
 list(APPEND LINK_LIBS tools)
 
 add_subdirectory(hooks)

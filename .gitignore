@@ -9,6 +9,7 @@ plugins/android/core/*
 plugins/android/libbase/*
 plugins/android/bionic/*
 plugins/android/libraries/*
+docs
 
 prebuilt/arm64-v8a
 prebuilt/armeabi-v7a

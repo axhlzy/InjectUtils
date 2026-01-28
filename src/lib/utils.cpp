@@ -5,6 +5,7 @@ using namespace std;
 #include <semaphore.h>
 #include "Injector/KittyInjector.hpp"
 #include "KittyMemoryMgr.hpp"
+
 KittyMemoryMgr kittyMemMgr;
 
 void init_kittyMemMgr() {
@@ -19,6 +20,8 @@ void init_kittyMemMgr() {
 #include "signal_enum.h"
 #include "stacktrace.h"
 #include <fmt/core.h>
+
+// ==================== 寄存器显示 ====================
 
 void showRegs(ucontext_t *ucontext) {
     auto ctx = ucontext->uc_mcontext;
@@ -52,36 +55,23 @@ void showRegs(ucontext_t *ucontext) {
     console->info("{}", output);
 }
 
-#define USE_SIGNAL 0
+// ==================== 信号处理 ====================
 
 #include <setjmp.h>
 
-// 使用 thread_local 确保线程安全
 thread_local jmp_buf recover;
 thread_local void *sp = nullptr;
 thread_local struct sigaction sa;
 
 void reg_crash_handler() {
-
-#if USE_SIGNAL
-    static sighandler_t segfault_handler = *[](int signum) {
-        auto signStr = magic_enum::enum_name((SignalE)signum);
-        console->error("[-] Caught signal | signum : {} | {}", signum, signStr);
-        signal(SIGSEGV, segfault_handler);
-        longjmp(recover, 1);
-    };
-    signal(SIGSEGV, segfault_handler);
-#else
     static auto signal_handler = [](int signum, siginfo_t *info, void *context) {
         auto signStr = magic_enum::enum_name<SignalE>((SignalE)signum);
         console->error("[-] Caught signal | signum : {} [ {} ] | siginfo_t : {:p} | context : {:p}", 
                       signum, signStr, info->si_addr, context);
         
-        // extract register values
         auto ucontext = (ucontext_t *)context;
         auto ctx = ucontext->uc_mcontext;
 
-        // fault_address
         console->error("[-] fault_address: {:#x}", static_cast<uint64_t>(ctx.fault_address));
 
         showRegs(ucontext);
@@ -94,17 +84,13 @@ void reg_crash_handler() {
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_SIGINFO;
     sigaction(SIGSEGV, &sa, nullptr);
-#endif
 
     if (setjmp(recover) == 0) {
-        // get current sp ptr
         asm volatile("mov %0, sp" : "=r"(sp));
         console->info("[*] Lua VM started | sp: {:p}", sp);
     } else {
         console->error("[-] Lua VM crashed and restart now | sp: {:p}", sp);
-        // set sp
         asm volatile("mov sp, %0" : : "r"(sp));
-        // set lr = initVM
         asm volatile("mov lr, %0" : : "r"((void *)initVM));
 #ifdef __aarch64__
         asm volatile("ret");
@@ -113,6 +99,8 @@ void reg_crash_handler() {
 #endif
     }
 }
+
+// ==================== 进程信息 ====================
 
 string getSelfPath() {
     char buf[1024];
@@ -170,8 +158,11 @@ std::string getThreadName(pid_t tid) {
     return threadName;
 }
 
+// ==================== 注入工具 ====================
+
 KittyInjector kitInjector;
 std::chrono::duration<double, std::milli> inj_ms{};
+
 void inject(pid_t pid) {
     const string lib = getSelfPath();
     bool use_memfd = false, hide_maps = true, hide_solist = false, stopped = false;
@@ -203,20 +194,7 @@ void inject(pid_t pid) {
     std::this_thread::sleep_for(std::chrono::milliseconds(1500));
 }
 
-void checkIl2cpp() {
-    static auto checkIl2cppLoaded = []() -> bool {
-        void *handle = xdl_open("libil2cpp.so", XDL_DEFAULT);
-        return handle != nullptr;
-    };
-
-    static std::thread t([]() {
-        pthread_setname_np(pthread_self(), "dohook");
-        while (!checkIl2cppLoaded()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
-    });
-    t.detach();
-}
+// ==================== 工具函数 ====================
 
 void set_selinux_state(bool status) {
     std::string command = status ? "setenforce 1" : "setenforce 0";
@@ -292,6 +270,8 @@ const char *addr2name(void *addr) {
     }
     return empty;
 }
+
+// ==================== 信号量封装 ====================
 
 class Semaphore {
 private:

@@ -456,7 +456,7 @@ void waitSoLoad(const char *filterSoName) {
 
     static std::map<std::string, int> map = {};
 
-    string filterSoNameStr = filterSoName;
+    std::string filterSoNameStr = filterSoName;
 
     HK(addr_call_constructors, [=](const soinfo *info) {
         auto base = info->base;

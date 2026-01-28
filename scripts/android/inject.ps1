@@ -33,7 +33,7 @@ Write-Host "Target PID: $ARG_PID" -ForegroundColor Green
 & adb shell $suPrefix setenforce 0
 
 # 推送注入器
-$injectorPath = "$PSScriptRoot/prebuilt/arm64-v8a/uinjector"
+$injectorPath = "$PSScriptRoot/../../prebuilt/arm64-v8a/uinjector"
 if (!(Test-Path $injectorPath)) {
     Write-Host "Injector not found: $injectorPath" -ForegroundColor Red
     Write-Host "Please build the project first" -ForegroundColor Yellow

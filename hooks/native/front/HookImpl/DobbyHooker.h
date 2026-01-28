@@ -6,67 +6,111 @@
 #define IL2CPPHOOKER_DOBBYHOOKER_H
 
 #include "HookBase/HookBase.hpp"
-#include "HookImpl/HookBase/HookBase.hpp"
 
+/**
+ * @brief Dobby Hook 实现
+ * 
+ * 基于 Dobby 框架的 Hook 实现
+ */
 class DobbyHooker : public HookBase {
-
-private:
 public:
+    /**
+     * @brief 注销 Hook
+     */
     MACRO_HIDE_SYMBOL
     static void UnRegisterHook(void *mPtr) {
-        if (mPtr == nullptr)
+        if (mPtr == nullptr) {
+            logw("DobbyHooker::UnRegisterHook: nullptr provided");
             return;
-        auto target = reinterpret_cast<void *>(mPtr);
-        DobbyDestroy(target);
-        if (voidInfoCache.count(target) > 0) {
-            void *srcCall = voidInfoCache[target];
-            if (srcCall != nullptr) {
-                voidInfoCache.erase(target);
-            }
         }
+        
+        auto target = reinterpret_cast<void *>(mPtr);
+        
+        // 销毁 Hook
+        int status = DobbyDestroy(target);
+        if (status != 0) {
+            loge("DobbyHooker::UnRegisterHook: DobbyDestroy failed with status %d", status);
+        }
+        
+        // 移除缓存
+        removeCache(target);
     }
 
-    MACRO_HIDE_SYMBOL static int registerInstrument(void *address, dobby_instrument_callback_t instrumentFunc) {
+    /**
+     * @brief 注册指令插桩
+     */
+    MACRO_HIDE_SYMBOL 
+    static int registerInstrument(void *address, dobby_instrument_callback_t instrumentFunc) {
+        if (address == nullptr || instrumentFunc == nullptr) {
+            loge("DobbyHooker::registerInstrument: invalid parameters");
+            return -1;
+        }
+        
         int status = DobbyInstrument(address, instrumentFunc);
+        if (status != 0) {
+            loge("DobbyHooker::registerInstrument: failed with status %d", status);
+        }
         return status;
     }
 
+    /**
+     * @brief 注册 Hook（模板版本）
+     */
     template <typename... Args>
-    MACRO_HIDE_SYMBOL static int registerHook(void *mPtr, HookType type, FuncType<Args...> replaceFunction = nullptr) {
-        if (mPtr == nullptr)
+    MACRO_HIDE_SYMBOL 
+    static int registerHook(void *mPtr, HookType type, FuncType<Args...> replaceFunction = nullptr) {
+        if (mPtr == nullptr) {
+            loge("DobbyHooker::registerHook: nullptr provided");
             return -1;
+        }
         return registerHook(mPtr, type, reinterpret_cast<void *>(replaceFunction));
     }
 
-    MACRO_HIDE_SYMBOL static int registerHook(void *mPtr, HookType type, void *replaceFunction = nullptr) {
-        if (mPtr == nullptr)
+    /**
+     * @brief 注册 Hook（通用版本）
+     */
+    MACRO_HIDE_SYMBOL 
+    static int registerHook(void *mPtr, HookType type, void *replaceFunction = nullptr) {
+        if (mPtr == nullptr) {
+            loge("DobbyHooker::registerHook: nullptr provided");
             return -1;
+        }
+        
         auto target = reinterpret_cast<void *>(mPtr);
         dobby_disable_near_branch_trampoline();
 
         int status = -1;
-        void *voidPtrFunc = reinterpret_cast<void *>(replaceFunction);
-        dobby_dummy_func_t pVoid = reinterpret_cast<dobby_dummy_func_t>(voidPtrFunc);
-        dobby_dummy_func_t replaceFunc = (dobby_dummy_func_t)(pVoid);
         dobby_dummy_func_t srcCall = nullptr;
 
         switch (type) {
         case HookType::HOOK_DEFAULT:
-            if (replaceFunc == nullptr)
+            if (replaceFunction == nullptr) {
+                loge("DobbyHooker::registerHook: replaceFunction is nullptr for HOOK_DEFAULT");
                 break;
-            status = DobbyHook(target, replaceFunc, &srcCall);
+            }
+            status = DobbyHook(target, reinterpret_cast<dobby_dummy_func_t>(replaceFunction), &srcCall);
             break;
+            
         case HookType::HOOK_RET_NOP_0:
             status = DobbyHook(target, function_ret_0, nullptr);
             break;
+            
         case HookType::HOOK_RET_NOP_1:
             status = DobbyHook(target, function_ret_1, nullptr);
             break;
+            
         default:
-            loge("Unknown HookType: %p", type);
+            loge("DobbyHooker::registerHook: Unknown HookType %d", static_cast<int>(type));
             break;
         }
-        voidInfoCache.insert({mPtr, srcCall});
+        
+        if (status != 0) {
+            loge("DobbyHooker::registerHook: DobbyHook failed with status %d", status);
+        } else {
+            // 成功时插入缓存
+            insertCache(mPtr, srcCall);
+        }
+        
         return status;
     }
 };

@@ -13,4 +13,5 @@ if ([string]::IsNullOrWhiteSpace($ApkName)) {
 
 Write-Host "Restoring library for $ApkName..." -ForegroundColor Cyan
 
-& "$PSScriptRoot\modify.ps1" -ApkName $ApkName -restore $True
+$ScriptDir = Split-Path $PSScriptRoot -Parent
+& "$ScriptDir\android\modify.ps1" -ApkName $ApkName -restore $True

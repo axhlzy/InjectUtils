@@ -13,8 +13,8 @@ if ([string]::IsNullOrWhiteSpace($pkgName)) {
 
 Write-Host "Running injector for $pkgName" -ForegroundColor Green
 
-$CURR = (Get-Item -Path ".\" -Verbose).FullName
-$injectorPath = "$CURR\prebuilt\arm64-v8a\uinjector"
+$ProjectRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+$injectorPath = "$ProjectRoot\prebuilt\arm64-v8a\uinjector"
 
 # 检查注入器是否存在
 if (!(Test-Path $injectorPath)) {
