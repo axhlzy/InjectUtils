@@ -2,6 +2,7 @@
 #include "config.h"
 #include "log.h"
 #include "main.h"
+#include "lua_function_list.h"
 #include <LuaSocket/LuaReplClient.hpp>
 #include <LuaSocket/LuaReplServer.hpp>
 
@@ -58,6 +59,52 @@ void startReplSocket(lua_State *L) {
     }
 }
 
+// 获取常用的 Lua 命令和关键字用于自动补全
+static std::vector<std::string> getDefaultLuaSuggestions() {
+    std::vector<std::string> suggestions = {
+        // 常用 Lua 函数
+        "print", "type", "tonumber", "tostring", "pairs", "ipairs",
+        "next", "select", "assert", "error", "pcall", "xpcall",
+        "getmetatable", "setmetatable", "rawget", "rawset", "rawequal",
+        "collectgarbage", "dofile", "loadfile", "load", "require",
+        
+        // 表操作
+        "table.concat", "table.insert", "table.remove", "table.sort",
+        "table.pack", "table.unpack", "table.move",
+        
+        // 字符串操作
+        "string.byte", "string.char", "string.dump", "string.find",
+        "string.format", "string.gmatch", "string.gsub", "string.len",
+        "string.lower", "string.match", "string.rep", "string.reverse",
+        "string.sub", "string.upper",
+        
+        // 数学函数
+        "math.abs", "math.acos", "math.asin", "math.atan", "math.ceil",
+        "math.cos", "math.deg", "math.exp", "math.floor", "math.log",
+        "math.max", "math.min", "math.modf", "math.rad", "math.random",
+        "math.randomseed", "math.sin", "math.sqrt", "math.tan",
+        
+        // IO 操作
+        "io.open", "io.close", "io.read", "io.write", "io.flush",
+        "io.lines", "io.input", "io.output", "io.tmpfile",
+        
+        // OS 操作
+        "os.clock", "os.date", "os.difftime", "os.execute", "os.exit",
+        "os.getenv", "os.remove", "os.rename", "os.time", "os.tmpname",
+        
+        // 控制命令
+        "exit", "quit", "q", "quitLua",
+        
+        "help"
+    };
+    
+    // 添加自定义绑定的函数
+    auto customFunctions = getCustomLuaFunctions();
+    suggestions.insert(suggestions.end(), customFunctions.begin(), customFunctions.end());
+    
+    return suggestions;
+}
+
 void startReplClient() {
     console->info("[*] Starting local REPL client, connecting to port {}", SOCKET_PORT);
     logd("[*] Connecting to localhost:%d", SOCKET_PORT);
@@ -71,8 +118,12 @@ void startReplClient() {
     }
 
     console->info("[*] Connected! Type Lua commands or 'exit' to quit");
+    console->info("[*] Press TAB for auto-completion, Ctrl+R for history search");
 
-    installRepl({""}, [&](const std::string &input) {
+    // 获取默认的 Lua 命令补全列表
+    std::vector<std::string> suggestions = getDefaultLuaSuggestions();
+
+    installRepl(suggestions, [&](const std::string &input) {
         if (input == "exit" || input == "q") {
             console->info("[*] Closing connection...");
             client.disconnect();

@@ -36,6 +36,26 @@ else()
     message(WARNING "Failed to generate DEX headers: ${BUILD_DEX_ERROR}")
 endif()
 
+# 生成 Lua 函数列表用于 REPL 自动补全
+set(EXTRACT_LUA_SCRIPT ${CMAKE_SOURCE_DIR}/tools/extract_lua_functions.py)
+set(LUA_FUNCTION_HEADER ${CMAKE_SOURCE_DIR}/src/include/lua_function_list.h)
+
+message(STATUS "Extracting Lua functions for REPL autocomplete...")
+execute_process(
+    COMMAND python ${EXTRACT_LUA_SCRIPT}
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    RESULT_VARIABLE EXTRACT_LUA_RESULT
+    OUTPUT_VARIABLE EXTRACT_LUA_OUTPUT
+    ERROR_VARIABLE EXTRACT_LUA_ERROR
+)
+
+if(EXTRACT_LUA_RESULT EQUAL 0)
+    message(STATUS "Lua function list generated successfully")
+    message(STATUS "${EXTRACT_LUA_OUTPUT}")
+else()
+    message(WARNING "Failed to generate Lua function list: ${EXTRACT_LUA_ERROR}")
+endif()
+
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     add_definitions(-DDEBUG_PROJECT)
 endif()
