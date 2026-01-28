@@ -197,17 +197,17 @@ protected:
     }
 };
 
-BINDFUNC(qbdi) {
-    luabridge::getGlobalNamespace(L)
-        // .beginNamespace("qbdi")
-        // .addFunction("vmCall", luabridge::overload<PTR, QBDI::rword>(&QBDI_TRACE::vmCall))
-        // .endNamespace()
-        .beginClass<QBDI_TRACE>("qbdi_bind")
-        .addConstructor<void (*)()>()
-        .addConstructor<void (*)(PTR)>()
-        .addConstructor<void (*)(const soinfo *)>()
-        .addFunction("vmCall", luabridge::overload<QBDI::rword>(&QBDI_TRACE::vmCall))
-        .endClass();
-    static QBDI_TRACE trace;
-    luabridge::setGlobal(L, &trace, "qbdi");
-}
+// BINDFUNC(qbdi) {
+//     luabridge::getGlobalNamespace(L)
+//         // .beginNamespace("qbdi")
+//         // .addFunction("vmCall", luabridge::overload<PTR, QBDI::rword>(&QBDI_TRACE::vmCall))
+//         // .endNamespace()
+//         .beginClass<QBDI_TRACE>("qbdi_bind")
+//         .addConstructor<void (*)()>()
+//         .addConstructor<void (*)(PTR)>()
+//         .addConstructor<void (*)(const soinfo *)>()
+//         .addFunction("vmCall", luabridge::overload<QBDI::rword>(&QBDI_TRACE::vmCall))
+//         .endClass();
+//     static QBDI_TRACE trace;
+//     luabridge::setGlobal(L, &trace, "qbdi");
+// }
