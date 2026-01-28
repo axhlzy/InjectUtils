@@ -30,16 +30,16 @@ public:
     }
 };
 
-BINDFUNC(unity) {
-    luabridge::getGlobalNamespace(L)
-        .beginClass<unity_bind>("unity_bind")
-        .addFunction("info", &unity_bind::info)
-        .addFunction("assemblies", &unity_bind::assemblies)
-        .addFunction("Get", &unity_bind::Get)
-        .endClass();
-    void *handle_xdl = xdl_open(Config::LIBIL2CPP_SO, RTLD_LAZY);
-    if (handle_xdl == nullptr)
-        throw std::runtime_error(fmt::format("[*] luabridge bind unity failed @ [ {} ]", __func__));
-    static unity_bind unity;
-    luabridge::setGlobal(L, &unity, "unity");
-}
+// BINDFUNC(unity) {
+//     luabridge::getGlobalNamespace(L)
+//         .beginClass<unity_bind>("unity_bind")
+//         .addFunction("info", &unity_bind::info)
+//         .addFunction("assemblies", &unity_bind::assemblies)
+//         .addFunction("Get", &unity_bind::Get)
+//         .endClass();
+//     void *handle_xdl = xdl_open(Config::LIBIL2CPP_SO, RTLD_LAZY);
+//     if (handle_xdl == nullptr)
+//         throw std::runtime_error(fmt::format("[*] luabridge bind unity failed @ [ {} ]", __func__));
+//     static unity_bind unity;
+//     luabridge::setGlobal(L, &unity, "unity");
+// }

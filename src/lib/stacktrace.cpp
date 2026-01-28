@@ -287,9 +287,9 @@ void FindAndPrintMoveToExceptionHandlerArgs() {
             auto frame = reinterpret_cast<art::ShadowFrame*>(g_exception_handler_info.shadowFrame);
 
             try {
-                frame->Print();
-                frame->GetMethod()->Print();
-                frame->PrintBacktrace(2);
+                // frame->Print();
+                // frame->GetMethod()->Print();
+                frame->PrintBacktrace(32);
             } catch (...) {
                 loge("[!] Exception while processing ShadowFrame, falling back to manual iteration");
 

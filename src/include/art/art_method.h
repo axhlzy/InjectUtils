@@ -90,8 +90,16 @@ public:
     void CopyFrom(const ArtMethod* src);
     bool IsSameMethod(const ArtMethod* other) const;
     
+    // ========== DEX 相关方法 ==========
+    
     // 获取 DexFile（通过 DexCache）
     const DexFile* GetDexFile() const;
+    
+    // 检查是否是 Compact DEX
+    bool IsCompactDex() const;
+    
+    // 获取方法的指令基地址
+    const uint16_t* GetDexInstructions() const;
     
     // ========== 方法信息（通过 JVMTI） ==========
     std::string GetMethodName() const;

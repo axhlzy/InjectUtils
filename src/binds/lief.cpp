@@ -333,38 +333,38 @@ public:
     }
 };
 
-BINDFUNC(lief) {
-    luabridge::getGlobalNamespace(L)
-        .beginClass<LiefBind>("LiefBind")
-        .addFunction("parse", &LiefBind::parse)
-        .addFunction("self", &LiefBind::self)
-        .addFunction("exports",
-            luabridge::overload<const char*>(&LiefBind::exports),
-            luabridge::overload<>(&LiefBind::exports))
-        .addFunction("imports",
-            luabridge::overload<const char*>(&LiefBind::imports),
-            luabridge::overload<>(&LiefBind::imports))
-        .addFunction("sections", &LiefBind::sections)
-        .addFunction("segments", &LiefBind::segments)
-        .addFunction("dynamic", &LiefBind::dynamic)
-        .addFunction("libraries", &LiefBind::libraries)
-        .addFunction("relocations", &LiefBind::relocations)
-        .addFunction("header", &LiefBind::header)
-        .addFunction("findSymbol", &LiefBind::findSymbol)
-        .addFunction("sectionData", &LiefBind::sectionData)
-        .addFunction("info", &LiefBind::info)
-        .endClass();
+// BINDFUNC(lief) {
+//     luabridge::getGlobalNamespace(L)
+//         .beginClass<LiefBind>("LiefBind")
+//         .addFunction("parse", &LiefBind::parse)
+//         .addFunction("self", &LiefBind::self)
+//         .addFunction("exports",
+//             luabridge::overload<const char*>(&LiefBind::exports),
+//             luabridge::overload<>(&LiefBind::exports))
+//         .addFunction("imports",
+//             luabridge::overload<const char*>(&LiefBind::imports),
+//             luabridge::overload<>(&LiefBind::imports))
+//         .addFunction("sections", &LiefBind::sections)
+//         .addFunction("segments", &LiefBind::segments)
+//         .addFunction("dynamic", &LiefBind::dynamic)
+//         .addFunction("libraries", &LiefBind::libraries)
+//         .addFunction("relocations", &LiefBind::relocations)
+//         .addFunction("header", &LiefBind::header)
+//         .addFunction("findSymbol", &LiefBind::findSymbol)
+//         .addFunction("sectionData", &LiefBind::sectionData)
+//         .addFunction("info", &LiefBind::info)
+//         .endClass();
 
-    static LiefBind liefInstance;
-    luabridge::setGlobal(L, &liefInstance, "lief");
+//     static LiefBind liefInstance;
+//     luabridge::setGlobal(L, &liefInstance, "lief");
 
-    // 兼容旧 API
-    luabridge::getGlobalNamespace(L)
-        .beginNamespace("lief")
-        .addFunction("sefsyms", [](const char* pattern) {
-            static LiefBind instance;
-            instance.self();
-            instance.exports(pattern);
-        })
-        .endNamespace();
-}
+//     // 兼容旧 API
+//     luabridge::getGlobalNamespace(L)
+//         .beginNamespace("lief")
+//         .addFunction("sefsyms", [](const char* pattern) {
+//             static LiefBind instance;
+//             instance.self();
+//             instance.exports(pattern);
+//         })
+//         .endNamespace();
+// }

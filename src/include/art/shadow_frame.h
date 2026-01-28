@@ -4,8 +4,12 @@
 #include "art_common.h"
 #include "art_method.h"
 #include "dex_instruction.h"
+#include <jni.h>
 
 namespace art {
+
+// 将 mirror::Object* (ArtObject) 转换为 jobject
+jobject ArtObjectToJobject(JNIEnv* env, void* art_obj);
 
 /**
  * ShadowFrame 类

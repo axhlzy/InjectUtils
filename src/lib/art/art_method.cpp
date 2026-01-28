@@ -226,28 +226,114 @@ bool ArtMethod::IsSameMethod(const ArtMethod* other) const {
            GetDeclaringClassRef() == other->GetDeclaringClassRef();
 }
 
+bool ArtMethod::IsCompactDex() const {
+    const DexFile* dex_file = GetDexFile();
+    if (dex_file == nullptr) return false;
+    
+    // DexFile 结构: vtable (8 bytes) + begin_ (pointer)
+    const uint8_t* begin = *reinterpret_cast<const uint8_t* const*>(
+        reinterpret_cast<uintptr_t>(dex_file) + PointerSize);
+    
+    if (begin == nullptr) return false;
+    
+    // Compact DEX 魔数: "cdex"
+    return (begin[0] == 'c' && begin[1] == 'd' && begin[2] == 'e' && begin[3] == 'x');
+}
+
+const uint16_t* ArtMethod::GetDexInstructions() const {
+    const DexFile* dex_file = GetDexFile();
+    uint32_t code_item_offset = GetDexCodeItemOffset();
+    
+    if (dex_file == nullptr || code_item_offset == 0) {
+        return nullptr;
+    }
+    
+    // DexFile 结构: vtable (8) + begin_ (8) + size_ (8) + data_begin_ (8)
+    const uint8_t* data_begin = *reinterpret_cast<const uint8_t* const*>(
+        reinterpret_cast<uintptr_t>(dex_file) + PointerSize + PointerSize * 2);
+    
+    if (data_begin == nullptr) {
+        return nullptr;
+    }
+    
+    const uint8_t* code_item = data_begin + code_item_offset;
+    
+    // 根据 DEX 类型获取 insns 偏移
+    // Compact DEX: 0x04, Standard DEX: 0x10
+    size_t insns_offset = IsCompactDex() ? 0x04 : 0x10;
+    
+    return reinterpret_cast<const uint16_t*>(code_item + insns_offset);
+}
+
 const DexFile* ArtMethod::GetDexFile() const {
-    // 通过 xdl 调用 ART 的 GetDexFile 方法
-    // art::ArtMethod::GetDexFile() const
-    // _ZNK3art9ArtMethod10GetDexFileEv
-    void* handle = xdl_open("libart.so", XDL_DEFAULT);
-    if (handle == nullptr) {
-        return nullptr;
-    }
+    // 按照 TypeScript 参考实现的链式访问:
+    // ArtMethod -> declaring_class (GcRoot) -> ArtClass -> dex_cache (HeapReference) -> DexCache -> dex_file
     
-    typedef const DexFile* (*GetDexFileFunc)(const ArtMethod*);
-    auto func = reinterpret_cast<GetDexFileFunc>(
-        xdl_sym(handle, "_ZNK3art9ArtMethod10GetDexFileEv", nullptr));
+    // 检查 IsObsolete 标志
+    constexpr uint32_t kAccObsoleteMethod = 0x00040000;
+    uint32_t access_flags = GetAccessFlags();
     
-    if (func == nullptr) {
+    if ((access_flags & kAccObsoleteMethod) != 0) {
+        // 对于 obsolete 方法，调用 GetObsoleteDexCache
+        void* handle = xdl_open("libart.so", XDL_DEFAULT);
+        if (handle == nullptr) {
+            return nullptr;
+        }
+        
+        typedef void* (*GetObsoleteDexCacheFunc)(void*);
+        auto func = reinterpret_cast<GetObsoleteDexCacheFunc>(
+            xdl_sym(handle, "_ZN3art9ArtMethod19GetObsoleteDexCacheEv", nullptr));
+        
+        if (func == nullptr) {
+            xdl_close(handle);
+            return nullptr;
+        }
+        
+        void* dex_cache = func(const_cast<ArtMethod*>(this));
         xdl_close(handle);
+        
+        if (dex_cache == nullptr) {
+            return nullptr;
+        }
+        
+        // DexCache: ArtObject (8 bytes) + location_ (4) + num_preresolved_strings_ (4) + dex_file_ (8)
+        uintptr_t dex_cache_addr = reinterpret_cast<uintptr_t>(dex_cache);
+        const DexFile* dex_file = *reinterpret_cast<const DexFile**>(dex_cache_addr + 8 + 0x08);
+        return dex_file;
+    }
+    
+    // 正常路径: ArtMethod -> declaring_class -> dex_cache -> dex_file
+    
+    // 1. 读取 declaring_class_ (GcRoot, 4 bytes compressed reference)
+    uint32_t declaring_class_ref = GetDeclaringClassRef();
+    if (declaring_class_ref == 0) {
         return nullptr;
     }
     
-    const DexFile* result = func(this);
-    xdl_close(handle);
+    uintptr_t art_class_addr = static_cast<uintptr_t>(declaring_class_ref);
+    if (art_class_addr == 0) {
+        return nullptr;
+    }
     
-    return result;
+    // 2. 从 ArtClass 读取 dex_cache_ (HeapReference)
+    //    ArtClass: ArtObject (8) + class_loader_ (4) + component_type_ (4) + dex_cache_ (4)
+    constexpr size_t kArtObjectSize = 8;
+    constexpr size_t kHeapReferenceSize = 4;
+    uintptr_t dex_cache_ref_addr = art_class_addr + kArtObjectSize + kHeapReferenceSize * 2;
+    uint32_t dex_cache_ref = *reinterpret_cast<uint32_t*>(dex_cache_ref_addr);
+    
+    if (dex_cache_ref == 0) {
+        return nullptr;
+    }
+    
+    uintptr_t dex_cache_addr = static_cast<uintptr_t>(dex_cache_ref);
+    
+    // 3. 从 DexCache 读取 dex_file_
+    //    DexCache: ArtObject (8) + location_ (4) + num_preresolved_strings_ (4) + dex_file_ (8)
+    uintptr_t dex_file_ptr_addr = dex_cache_addr + kArtObjectSize + 0x08;
+    const DexFile* dex_file = *reinterpret_cast<const DexFile**>(dex_file_ptr_addr);
+    
+    return dex_file;
 }
 
 // ========== 方法信息（通过 JVMTI） ==========
@@ -349,16 +435,14 @@ std::string ArtMethod::GetAccessFlagsString() const {
 // ========== 调试方法 ==========
 
 void ArtMethod::Print() const {
-    loge("[*] ArtMethod @ %p", this);
-    loge("[*]   declaring_class_ref: 0x%08x", GetDeclaringClassRef());
-    loge("[*]   access_flags: 0x%08x (%s)", GetAccessFlags(), GetAccessFlagsString().c_str());
-    loge("[*]   CodeItemOffset: 0x%08x", GetDexCodeItemOffset());
-    logd("[*]   DexMethodIndex: %u, MethodIndex: %u", GetDexMethodIndex(), GetMethodIndex());
-    loge("[*]   hotness_count: %u", GetHotnessCount());
-    loge("[*]   data: %p", GetData());
-    loge("[*]   entry_point: %p", GetEntryPointFromQuickCompiledCode());
-    loge("[*]   method: %s", GetPrettyMethod(true).c_str());
-    logd("[*]   IsNative: %s, IsAbstract: %s", IsNative() ? "yes" : "no", IsAbstract() ? "yes" : "no");
+    logd("[*] ArtMethod @ %p: %s", this, GetPrettyMethod(true).c_str());
+    logd("[*]   declaring_class: 0x%08x, access_flags: 0x%08x (%s)", 
+         GetDeclaringClassRef(), GetAccessFlags(), GetAccessFlagsString().c_str());
+    logd("[*]   code_item_offset: 0x%x, dex_method_idx: %u, method_idx: %u",
+         GetDexCodeItemOffset(), GetDexMethodIndex(), GetMethodIndex());
+    logd("[*]   data: %p, entry_point: %p, native: %s, abstract: %s",
+         GetData(), GetEntryPointFromQuickCompiledCode(),
+         IsNative() ? "yes" : "no", IsAbstract() ? "yes" : "no");
 }
 
 // std::string PrettyMethod(bool with_signature)
@@ -370,9 +454,10 @@ std::string ArtMethod::PrettyMethodNative(bool with_signature) const {
         return GetPrettyMethod(with_signature);
     }
     
-    typedef void (*PrettyMethodFunc)(const ArtMethod*, std::string*, bool);
+    // ARM64 调用约定: 返回 std::string 时，第一个参数是结果指针
+    typedef void (*PrettyMethodFunc)(std::string*, const ArtMethod*, bool);
     auto func = reinterpret_cast<PrettyMethodFunc>(
-        xdl_sym(handle, "_ZN3art9ArtMethod12PrettyMethodEPS0_b", nullptr));
+        xdl_sym(handle, "_ZN3art9ArtMethod12PrettyMethodEb", nullptr));
     
     if (func == nullptr) {
         xdl_close(handle);
@@ -381,7 +466,7 @@ std::string ArtMethod::PrettyMethodNative(bool with_signature) const {
     }
     
     std::string result;
-    func(this, &result, with_signature);
+    func(&result, this, with_signature);
     xdl_close(handle);
 
     return result;
@@ -395,7 +480,7 @@ std::string ArtMethod::JniShortName() const {
         return "";
     }
     
-    typedef void (*JniShortNameFunc)(std::string*, const ArtMethod*);
+    typedef std::string (*JniShortNameFunc)(const ArtMethod*);
     auto func = reinterpret_cast<JniShortNameFunc>(
         xdl_sym(handle, "_ZN3art9ArtMethod12JniShortNameEv", nullptr));
     
@@ -404,8 +489,7 @@ std::string ArtMethod::JniShortName() const {
         return "";
     }
     
-    std::string result;
-    func(&result, this);
+    std::string result = func(this);
     xdl_close(handle);
 
     return result;
@@ -419,7 +503,7 @@ std::string ArtMethod::JniLongName() const {
         return "";
     }
     
-    typedef void (*JniLongNameFunc)(std::string*, const ArtMethod*);
+    typedef std::string (*JniLongNameFunc)(const ArtMethod*);
     auto func = reinterpret_cast<JniLongNameFunc>(
         xdl_sym(handle, "_ZN3art9ArtMethod11JniLongNameEv", nullptr));
     
@@ -428,8 +512,7 @@ std::string ArtMethod::JniLongName() const {
         return "";
     }
     
-    std::string result;
-    func(&result, this);
+    std::string result = func(this);
     xdl_close(handle);
 
     return result;

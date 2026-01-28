@@ -115,42 +115,20 @@ size_t Instruction::SizeInCodeUnitsComplexOpcode() const {
 size_t Instruction::SizeInCodeUnits() const {
     uint8_t opcode = Opcode();
     
-    // 尝试从 InstructionDescriptor 获取大小
+    // 从 ART 的 kInstructionDescriptors 获取指令大小
     const InstructionDescriptor* descriptors = GetInstructionDescriptors();
     if (descriptors != nullptr) {
         int8_t size = descriptors[opcode].size_in_code_units;
         if (size < 0) {
-            // 可变长度指令，需要调用 SizeInCodeUnitsComplexOpcode
+            // 可变长度指令（payload），调用 SizeInCodeUnitsComplexOpcode
             return SizeInCodeUnitsComplexOpcode();
         }
         return static_cast<size_t>(size);
     }
     
-    // 回退：使用静态表
-    // 指令大小表（以 code units 为单位）
-    // 参考 art/libdexfile/dex/dex_instruction.cc
-    static const uint8_t kInstructionSizeInCodeUnits[] = {
-        1, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 1, 1, 1, 1, 1,  // 0x00 - 0x0f
-        1, 1, 1, 2, 3, 2, 2, 3, 5, 2, 2, 3, 2, 1, 1, 2,  // 0x10 - 0x1f
-        2, 1, 2, 2, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  // 0x20 - 0x2f
-        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  // 0x30 - 0x3f
-        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  // 0x40 - 0x4f
-        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  // 0x50 - 0x5f
-        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  // 0x60 - 0x6f
-        2, 2, 2, 2, 3, 3, 3, 3, 3, 0, 3, 3, 3, 3, 3, 0,  // 0x70 - 0x7f
-        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  // 0x80 - 0x8f
-        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  // 0x90 - 0x9f
-        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  // 0xa0 - 0xaf
-        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  // 0xb0 - 0xbf
-        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  // 0xc0 - 0xcf
-        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,  // 0xd0 - 0xdf
-        2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0,  // 0xe0 - 0xef
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 0xf0 - 0xff
-    };
-    
-    // 特殊处理可变长度指令
-    if (opcode == 0x00) {  // nop
-        // nop 可能是 payload 的一部分，需要检查
+    // 回退：手动处理可变长度指令（payload）
+    // 当 libdexfile.so 符号不可用时
+    if (opcode == 0x00) {
         uint16_t ident = insns_[0];
         if (ident == 0x0100) {  // packed-switch-payload
             return 4 + insns_[1] * 2;
@@ -163,7 +141,10 @@ size_t Instruction::SizeInCodeUnits() const {
         }
     }
     
-    return kInstructionSizeInCodeUnits[opcode];
+    // 回退：返回默认大小 1（最小指令大小）
+    // 注意：这只在 kInstructionDescriptors 符号不可用时使用
+    // 正常情况下应该总是能获取到 ART 的描述符
+    return 1;
 }
 
 std::string Instruction::DumpHexLE(size_t instr_code_units) const {
@@ -185,8 +166,8 @@ std::string Instruction::DumpHexLE(size_t instr_code_units) const {
     }
     
     // art::Instruction::DumpHexLE(size_t) const
-    // 返回 std::string，使用 RVO (Return Value Optimization)
-    typedef void (*DumpHexLEFunc)(std::string*, const Instruction*, size_t);
+    // ARM64 调用约定：直接返回 std::string
+    typedef std::string (*DumpHexLEFunc)(const uint16_t*, size_t);
     auto func = reinterpret_cast<DumpHexLEFunc>(
         xdl_sym(handle, "_ZNK3art11Instruction9DumpHexLEEm", nullptr));
     
@@ -203,11 +184,10 @@ std::string Instruction::DumpHexLE(size_t instr_code_units) const {
         return result;
     }
     
-    std::string result;
     size_t real_size = SizeInCodeUnits();
     size_t dump_size = (real_size > instr_code_units) ? real_size : instr_code_units;
     
-    func(&result, this, dump_size);
+    std::string result = func(insns_, dump_size);
     xdl_close(handle);
     
     return result;
@@ -220,7 +200,10 @@ std::string Instruction::DumpString(const DexFile* dex_file) const {
     }
     
     // art::Instruction::DumpString(art::DexFile const*) const
-    typedef void (*DumpStringFunc)(std::string*, const Instruction*, const DexFile*);
+    // ARM64 调用约定：返回 std::string
+    // 参数：this (insns_), dex_file
+    // 返回：std::string (直接返回)
+    typedef std::string (*DumpStringFunc)(const uint16_t*, const DexFile*);
     auto func = reinterpret_cast<DumpStringFunc>(
         xdl_sym(handle, "_ZNK3art11Instruction10DumpStringEPKNS_7DexFileE", nullptr));
     
@@ -229,8 +212,7 @@ std::string Instruction::DumpString(const DexFile* dex_file) const {
         return "(DumpString symbol not found)";
     }
     
-    std::string result;
-    func(&result, this, dex_file);
+    std::string result = func(insns_, dex_file);
     xdl_close(handle);
     
     return result;
