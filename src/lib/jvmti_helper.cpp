@@ -1067,18 +1067,12 @@ static void JNICALL ExceptionCallback(
     }
     
     if (isDivideByZero) {
-        loge("[!] ========================================");
-        loge("[!] EXCEPTION CAUGHT: %s", className ? className : "Unknown");
-        if (message != nullptr) {
-            loge("[!] Message: %s", message);
-        }
-        loge("[!] Location: method=%p, location=%lld", method, (long long)location);
-        
         // 获取 Java 方法信息
         char* methodName = nullptr;
         char* methodSignature = nullptr;
         char* methodGeneric = nullptr;
         jclass declaringClass = nullptr;
+        std::string methodInfo = "?";
         
         jvmtiError error = jvmti->GetMethodName(method, &methodName, &methodSignature, &methodGeneric);
         if (error == JVMTI_ERROR_NONE) {
@@ -1087,8 +1081,9 @@ static void JNICALL ExceptionCallback(
                 char* classSignature = nullptr;
                 error = jvmti->GetClassSignature(declaringClass, &classSignature, nullptr);
                 if (error == JVMTI_ERROR_NONE && classSignature != nullptr) {
-                    loge("[!] Java Method: %s.%s%s", classSignature, methodName ? methodName : "?", 
-                         methodSignature ? methodSignature : "");
+                    methodInfo = std::string(classSignature) + "." + 
+                                 (methodName ? methodName : "?") + 
+                                 (methodSignature ? methodSignature : "");
                     jvmti->Deallocate((unsigned char*)classSignature);
                 }
             }
@@ -1104,6 +1099,13 @@ static void JNICALL ExceptionCallback(
             }
         }
         
+        // 简化日志输出
+        loge("[!] Exception: %s%s%s @ %s", 
+             className ? className : "Unknown",
+             message ? ": " : "",
+             message ? message : "",
+             methodInfo.c_str());
+        
         // 根据模式打印堆栈
         switch (g_stack_trace_mode) {
             case STACK_TRACE_NATIVE:
@@ -1114,14 +1116,11 @@ static void JNICALL ExceptionCallback(
                 break;
             case STACK_TRACE_BOTH:
                 PrintNativeBacktrace();
-                loge("[!]");  // 空行分隔
                 PrintJavaBacktrace(jvmti, thread);
                 break;
             case STACK_TRACE_NULL:
                 break;
         }
-        
-        loge("[!] ========================================");
     }
     
     // 清理
@@ -1151,7 +1150,7 @@ static void JNICALL ExceptionCallback(
     }
 }
 
-// JVMTI ClassFileLoadHook 回调 - 反编译 DEX 字节码并插入 CrashHelper.triggerCrash() 调用
+// JVMTI ClassFileLoadHook  字节码并插入 CrashHelper.triggerCrash() 调用
 static void JNICALL ClassFileLoadHookCallback(
     jvmtiEnv* jvmti, JNIEnv* jni, jclass class_being_redefined, 
     jobject loader, const char* name, jobject protection_domain, 
@@ -1161,10 +1160,16 @@ static void JNICALL ClassFileLoadHookCallback(
     if (name == nullptr) {
         return;
     }
+
+    logd("ClassFileLoadHookCallback -> %s", name);
     
-    // 过滤目标类：com/zxc/jtik/demo/TestActivity$1
+    // 过滤目标类：com.lzy.test2
     std::string className(name);
-    if (className.find("com/zxc/jtik/demo/TestActivity$1") == std::string::npos) {
+
+    // 说实话 这里面的类命名就非常的混乱 这里的的回调名称 是这样的写法 com/lzy/test2/MainActivity$1
+    // smali 中是这样的写法 Lcom/lzy/test2/MainActivity$1;
+    // java 中又是 com.lzy.test2.MainActivity$1
+    if (className.find("MainActivity$1") == std::string::npos) {
         return;
     }
 
@@ -1178,10 +1183,9 @@ static void JNICALL ClassFileLoadHookCallback(
         // 使用 Dexter slicer 读取 DEX 数据
         dex::Reader reader(class_data, class_data_len);
         
-        // 转换类名为 JNI 格式 (com/zxc/jtik/demo/TestActivity$1 -> Lcom/zxc/jtik/demo/TestActivity$1;)
         std::string jni_class_name = "L" + className + ";";
         logd("[*] Looking for class: %s", jni_class_name.c_str());
-        
+
         // 查找类索引
         auto class_index = reader.FindClassIndex(jni_class_name.c_str());
         if (class_index == dex::kNoIndex) {
@@ -1376,6 +1380,240 @@ bool InitJvmti(JavaVM *vm) {
     
     logd("[*] JVMTI initialized successfully");
     return true;
+}
+
+// ==================== 类重转换工具函数 ====================
+
+/**
+ * 重转换已加载的类，使其重新触发 ClassFileLoadHook 回调
+ * 用于在 Agent attach 后 hook 已经加载的类
+ * @param env JNI 环境指针
+ * @param jvmti JVMTI 环境指针（如果为 nullptr，则使用全局 g_jvmti_env）
+ * @param className 类名（支持 com.example.MyClass 或 com/example/MyClass 格式）
+ * @return 成功返回 true，失败返回 false
+ */
+bool RetransformLoadedClass(JNIEnv* env, jvmtiEnv* jvmti, const char* className) {
+    if (env == nullptr || className == nullptr) {
+        loge("[!] RetransformLoadedClass: invalid parameters");
+        return false;
+    }
+    
+    // 如果没有传入 jvmti，使用全局的
+    if (jvmti == nullptr) {
+        jvmti = GetGlobalJvmtiEnv();
+        if (jvmti == nullptr) {
+            loge("[!] RetransformLoadedClass: JVMTI environment not available");
+            return false;
+        }
+    }
+    
+    // 将 com.example.MyClass 转换为 com/example/MyClass（JNI 格式）
+    // 同时处理 JNI 签名格式：去掉 L 前缀和 ; 后缀
+    std::string jniClassName(className);
+    std::replace(jniClassName.begin(), jniClassName.end(), '.', '/');
+    
+    // 如果是 JNI 签名格式 (Lcom/example/Class;)，去掉 L 和 ;
+    if (!jniClassName.empty() && jniClassName[0] == 'L' && jniClassName.back() == ';') {
+        jniClassName = jniClassName.substr(1, jniClassName.length() - 2);
+    }
+    
+    logd("[*] RetransformLoadedClass: attempting to retransform class: %s", jniClassName.c_str());
+    
+    // 查找已加载的类
+    jclass targetClass = env->FindClass(jniClassName.c_str());
+    if (targetClass == nullptr) {
+        if (env->ExceptionCheck()) {
+            env->ExceptionClear();
+        }
+        
+        // FindClass 失败，尝试使用 JVMTI GetLoadedClasses 查找
+        logd("[*] RetransformLoadedClass: FindClass failed, trying JVMTI GetLoadedClasses...");
+        
+        jint classCount = 0;
+        jclass* classes = nullptr;
+        jvmtiError error = jvmti->GetLoadedClasses(&classCount, &classes);
+        
+        if (error != JVMTI_ERROR_NONE) {
+            loge("[!] RetransformLoadedClass: GetLoadedClasses failed, error: %d", error);
+            return false;
+        }
+        
+        // 构造要匹配的 JNI 签名格式：Lcom/example/Class;
+        std::string targetSignature = "L" + jniClassName + ";";
+        
+        for (jint i = 0; i < classCount; i++) {
+            char* signature = nullptr;
+            error = jvmti->GetClassSignature(classes[i], &signature, nullptr);
+            if (error == JVMTI_ERROR_NONE && signature != nullptr) {
+                if (targetSignature == signature) {
+                    // 找到目标类，创建全局引用
+                    targetClass = (jclass)env->NewLocalRef(classes[i]);
+                    logd("[*] RetransformLoadedClass: found class via JVMTI: %s", signature);
+                    jvmti->Deallocate((unsigned char*)signature);
+                    break;
+                }
+                jvmti->Deallocate((unsigned char*)signature);
+            }
+        }
+        
+        // 释放类数组
+        jvmti->Deallocate((unsigned char*)classes);
+        
+        if (targetClass == nullptr) {
+            loge("[!] RetransformLoadedClass: class not found: %s", className);
+            return false;
+        }
+    }
+    
+    // 调用 RetransformClasses 让类重新触发 ClassFileLoadHook
+    jvmtiError error = jvmti->RetransformClasses(1, &targetClass);
+    env->DeleteLocalRef(targetClass);
+    
+    if (error != JVMTI_ERROR_NONE) {
+        loge("[!] RetransformLoadedClass: RetransformClasses failed for %s, error: %d", className, error);
+        return false;
+    }
+    
+    logd("[*] RetransformLoadedClass: successfully triggered retransform for: %s", className);
+    return true;
+}
+
+/**
+ * 批量重转换已加载的类
+ * @param env JNI 环境指针
+ * @param jvmti JVMTI 环境指针（如果为 nullptr，则使用全局 g_jvmti_env）
+ * @param classNames 类名数组
+ * @param count 类名数量
+ * @return 成功重转换的类数量
+ */
+int RetransformLoadedClasses(JNIEnv* env, jvmtiEnv* jvmti, const char** classNames, int count) {
+    if (env == nullptr || classNames == nullptr || count <= 0) {
+        loge("[!] RetransformLoadedClasses: invalid parameters");
+        return 0;
+    }
+    
+    // 如果没有传入 jvmti，使用全局的
+    if (jvmti == nullptr) {
+        jvmti = GetGlobalJvmtiEnv();
+        if (jvmti == nullptr) {
+            loge("[!] RetransformLoadedClasses: JVMTI environment not available");
+            return 0;
+        }
+    }
+    
+    logd("[*] RetransformLoadedClasses: attempting to retransform %d classes", count);
+    
+    // 收集所有找到的类
+    std::vector<jclass> classes;
+    classes.reserve(count);
+    
+    for (int i = 0; i < count; i++) {
+        if (classNames[i] == nullptr) {
+            continue;
+        }
+        
+        // 转换类名格式
+        std::string jniClassName(classNames[i]);
+        std::replace(jniClassName.begin(), jniClassName.end(), '.', '/');
+        
+        // 如果是 JNI 签名格式 (Lcom/example/Class;)，去掉 L 和 ;
+        if (!jniClassName.empty() && jniClassName[0] == 'L' && jniClassName.back() == ';') {
+            jniClassName = jniClassName.substr(1, jniClassName.length() - 2);
+        }
+        
+        jclass cls = env->FindClass(jniClassName.c_str());
+        if (cls == nullptr) {
+            if (env->ExceptionCheck()) {
+                env->ExceptionClear();
+            }
+            // FindClass 失败，尝试使用 JVMTI 查找
+            cls = nullptr;
+        }
+        
+        if (cls != nullptr) {
+            classes.push_back(cls);
+            logd("[*]   Found class via FindClass: %s", classNames[i]);
+        } else {
+            logw("[!]   FindClass failed for: %s, will try JVMTI later", classNames[i]);
+        }
+    }
+    
+    // 如果有类没找到，使用 JVMTI GetLoadedClasses 再次查找
+    if (classes.size() < static_cast<size_t>(count)) {
+        jint loadedClassCount = 0;
+        jclass* loadedClasses = nullptr;
+        jvmtiError error = jvmti->GetLoadedClasses(&loadedClassCount, &loadedClasses);
+        
+        if (error == JVMTI_ERROR_NONE && loadedClasses != nullptr) {
+            for (int i = 0; i < count; i++) {
+                if (classNames[i] == nullptr) {
+                    continue;
+                }
+                
+                // 转换类名格式
+                std::string jniClassName(classNames[i]);
+                std::replace(jniClassName.begin(), jniClassName.end(), '.', '/');
+                if (!jniClassName.empty() && jniClassName[0] == 'L' && jniClassName.back() == ';') {
+                    jniClassName = jniClassName.substr(1, jniClassName.length() - 2);
+                }
+                
+                // 检查是否已经找到
+                bool alreadyFound = false;
+                std::string targetSignature = "L" + jniClassName + ";";
+                for (jclass found : classes) {
+                    char* sig = nullptr;
+                    if (jvmti->GetClassSignature(found, &sig, nullptr) == JVMTI_ERROR_NONE && sig) {
+                        if (targetSignature == sig) {
+                            alreadyFound = true;
+                        }
+                        jvmti->Deallocate((unsigned char*)sig);
+                        if (alreadyFound) break;
+                    }
+                }
+                
+                if (alreadyFound) continue;
+                
+                // 在已加载类中查找
+                for (jint j = 0; j < loadedClassCount; j++) {
+                    char* signature = nullptr;
+                    if (jvmti->GetClassSignature(loadedClasses[j], &signature, nullptr) == JVMTI_ERROR_NONE && signature) {
+                        if (targetSignature == signature) {
+                            jclass cls = (jclass)env->NewLocalRef(loadedClasses[j]);
+                            if (cls != nullptr) {
+                                classes.push_back(cls);
+                                logd("[*]   Found class via JVMTI: %s", classNames[i]);
+                            }
+                            jvmti->Deallocate((unsigned char*)signature);
+                            break;
+                        }
+                        jvmti->Deallocate((unsigned char*)signature);
+                    }
+                }
+            }
+            jvmti->Deallocate((unsigned char*)loadedClasses);
+        }
+    }
+    
+    if (classes.empty()) {
+        loge("[!] RetransformLoadedClasses: no classes found");
+        return 0;
+    }
+    
+    // 批量重转换
+    jvmtiError error = jvmti->RetransformClasses(static_cast<jint>(classes.size()), classes.data());
+    
+    // 清理本地引用
+    for (jclass cls : classes) {
+        env->DeleteLocalRef(cls);
+    }
+    
+    if (error != JVMTI_ERROR_NONE) {
+        loge("[!] RetransformLoadedClasses: RetransformClasses failed, error: %d", error);
+        return 0;
+    }
+    
+    logd("[*] RetransformLoadedClasses: successfully triggered retransform for %zu classes", classes.size());
+    return static_cast<int>(classes.size());
 }
 
 // ==================== JVMTI Agent 生命周期函数 ====================

@@ -86,4 +86,24 @@ int SetJvmtiCapabilities(jvmtiEnv *jvmti);
  */
 bool InitJvmti(JavaVM *vm);
 
+/**
+ * 重转换已加载的类，使其重新触发 ClassFileLoadHook 回调
+ * 用于在 Agent attach 后 hook 已经加载的类
+ * @param env JNI 环境指针
+ * @param jvmti JVMTI 环境指针（如果为 nullptr，则使用全局 g_jvmti_env）
+ * @param className 类名（支持 com.example.MyClass 或 com/example/MyClass 格式）
+ * @return 成功返回 true，失败返回 false
+ */
+bool RetransformLoadedClass(JNIEnv* env, jvmtiEnv* jvmti, const char* className);
+
+/**
+ * 批量重转换已加载的类
+ * @param env JNI 环境指针
+ * @param jvmti JVMTI 环境指针（如果为 nullptr，则使用全局 g_jvmti_env）
+ * @param classNames 类名数组
+ * @param count 类名数量
+ * @return 成功重转换的类数量
+ */
+int RetransformLoadedClasses(JNIEnv* env, jvmtiEnv* jvmti, const char** classNames, int count);
+
 #endif // JVMTI_HELPER_H

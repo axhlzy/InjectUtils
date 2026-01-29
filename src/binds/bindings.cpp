@@ -3,7 +3,7 @@
 #include <algorithm>
 
 // 日志开关 - 设为 true 可排查绑定崩溃问题
-inline static bool g_bindShowLog = true;
+inline static bool g_bindShowLog = false;
 
 #define BIND_LOG(fmt, ...) do { if (g_bindShowLog) logd(fmt, ##__VA_ARGS__); } while(0)
 
